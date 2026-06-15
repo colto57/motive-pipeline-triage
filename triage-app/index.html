@@ -81,18 +81,33 @@
 
       <section class="methodology">
         <h2>How scoring works</h2>
+        <p class="panel-sub methodology-intro">
+          Calibrated from 41 Motive venture investments on motivepartners.com. Hard filters first; then portfolio-weighted ranking.
+        </p>
         <div class="method-grid">
           <article>
-            <h3>1 · Mandate gates</h3>
-            <p>Hard filters on stage (Pre-Seed – Series A) and geography (US/Europe). Failures never enter the ranked shortlist.</p>
+            <h3>1 · Strict mandate gates</h3>
+            <p>Three binary filters — all must pass: <strong>Pre-Seed – Series A</strong>, <strong>US or Europe HQ</strong>, and <strong>core fintech sector</strong> (non-fintech such as HR, logistics, or pure healthcare IT are excluded with reasons).</p>
           </article>
           <article>
-            <h3>2 · Thesis similarity</h3>
-            <p>TF-IDF vectors compare each pitch to Motive's venture thesis statements and 37 venture portfolio references; cosine similarity becomes a 0–100 score.</p>
+            <h3>2 · Portfolio-calibrated sector fit (24%)</h3>
+            <p>Sector weights mirror Motive's venture portfolio: Wealth 34%, Banking/Payments 32%, AI/Data 15%, Capital Markets 10%, Insurance 7%, Business Services 2%.</p>
           </article>
           <article>
-            <h3>3 · Multi-factor rank</h3>
-            <p>Remaining companies score on sector fit, traction parsing, founder signals, and stage fit — each with human-readable reasons.</p>
+            <h3>3 · Thesis similarity (22%)</h3>
+            <p>TF-IDF cosine similarity vs Motive thesis statements and 37 venture portfolio references — closest comp surfaced (e.g. Navro, Synthera AI).</p>
+          </article>
+          <article>
+            <h3>4 · Geography & company age (8% each)</h3>
+            <p>Hub-city bonus for NYC, Berlin, London, SF (~44% US / 56% Europe portfolio mix). Company age scored against stage-typical windows (e.g. Seed: 1–4 yrs).</p>
+          </article>
+          <article>
+            <h3>5 · Traction, founders, stage (18% / 14% / 6%)</h3>
+            <p>ARR/GMV/growth parsing, tier-1 fintech founder signals, and stage fit within mandate — each with human-readable reasons.</p>
+          </article>
+          <article>
+            <h3>6 · Output tiers</h3>
+            <p>≥76 Priority Review · 60–75 Standard Review · &lt;60 Low Priority. Every result includes filter reasons or score rationale.</p>
           </article>
         </div>
       </section>

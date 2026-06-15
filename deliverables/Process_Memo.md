@@ -1,51 +1,68 @@
 # Motive Pipeline Triage — Process Memo
 
-**Author:** Colton · **Tool:** `triage-app/` (browser-based prototype)
+**Author:** Colton · **Live demo:** https://colto57.github.io/motive-pipeline-triage/
 
 ## (a) Criteria and rationale
 
-The triage system mirrors Motive Partners’ stated venture mandate: **Pre-Seed through Series A**, **US/Europe geography**, and **core fintech verticals** (payments, banking infrastructure, lending, insurance, wealth, capital markets, AI/data for financial services).
+The triage system enforces Motive Partners’ stated **venture mandate** — Pre-Seed through Series A, US/Europe only, core fintech — then ranks survivors using weights **calibrated from 41 venture investments** listed on [motivepartners.com/portfolio](https://motivepartners.com/portfolio).
 
-Beyond hard gates, remaining deals are ranked on five signals aligned with how a venture team actually prioritizes inbound:
+### Portfolio analysis (Venture strategy, n=41)
 
-1. **Thesis similarity** — semantic proximity to Motive’s public venture thesis and 37 venture portfolio companies (from motivepartners.com).
-2. **Sector alignment** — keyword fit to Motive core sectors, with penalties for clearly off-thesis categories (HR, logistics, pure healthcare IT, etc.).
-3. **Traction** — parsed ARR, GMV, growth rates, customer counts, and institutional design partners from pitch text.
-4. **Founder signal** — serial exits, tier-1 fintech/financial services employers, senior operator titles.
-5. **Stage fit** — Seed and Series A weighted highest within mandate.
+| Signal | Observed pattern | How we use it |
+|--------|------------------|---------------|
+| **Sector mix** | Wealth 34%, Banking/Payments 32%, AI/Data 15%, Capital Markets 10%, Insurance 7%, Business Services 2% | Sector fit score weighted by historical portfolio share |
+| **Geography** | US 44%, Europe 56% | Both pass mandate; hub cities (NYC, Berlin, London, SF, Paris, Amsterdam) get affinity bonus |
+| **Company age** | Venture backs young companies at entry | Age vs. stage windows (Pre-seed 0–2 yrs, Seed 1–4 yrs, Series A 2–5 yrs ideal) |
+| **Check size** | $1–10M lead/co-lead (Motive About page) | Raise amount parsed from pitch; in-range raises score higher |
+| **Themes** | Verticalized AI, embedded finance, infra APIs | Thesis similarity via TF-IDF + portfolio corpus; AI keyword bonus |
+
+### Hard filters (strict — must pass all three)
+
+1. **Stage:** Pre-Seed, Seed, or Series A only  
+2. **Geography:** US or Europe HQ (e.g. Singapore excluded)  
+3. **Sector:** Core fintech only — HR Tech, PropTech/CRE ops, logistics, pure healthcare IT, standalone climate/ESG, and non-wealth RE tech are **filtered out** with explicit reasons
+
+### Ranking signals (post-filter)
+
+1. **Portfolio sector fit (24%)** — maps pitch to Motive’s six venture subsectors using portfolio weights  
+2. **Thesis similarity (22%)** — TF-IDF cosine vs thesis statements + 37 venture portfolio references  
+3. **Traction (18%)** — ARR, GMV, growth, customers, design partners, raise size vs. $1–10M check  
+4. **Founder signal (14%)** — serial exits, tier-1 fintech employers, senior titles  
+5. **Geography affinity (8%)** — in-mandate + hub-city bonus  
+6. **Company age fit (8%)** — founding year vs. stage-typical age  
+7. **Stage fit (6%)** — Seed highest within mandate  
 
 ## (b) Scoring / filtering structure
 
-**Layer 1 — Hard filters (binary):** Stage ∉ {Pre-Seed, Seed, Series A} → excluded with reason. HQ outside US/Europe (e.g., Singapore) → excluded.
+**Layer 1 — Mandate gates:** Stage · Geography · Fintech sector → excluded companies never ranked; each failure reason shown.
 
-**Layer 2 — Weighted score (0–100):** Thesis 28%, Sector 22%, Traction 22%, Founders 18%, Stage 10%.
+**Layer 2 — Weighted score (0–100):** Weights above sum to 100%, derived from portfolio analytics rather than equal weighting.
 
-**Layer 3 — Tiers:** ≥78 Priority Review · 62–77 Standard Review · <62 Low Priority.
+**Layer 3 — Tiers:** ≥76 Priority Review · 60–75 Standard Review · <60 Low Priority.
 
-**Thesis similarity method:** Each company document (name + sector + founders + pitch) and a reference corpus (Motive thesis statements + venture portfolio entries) are tokenized. TF-IDF vectors are computed over the combined vocabulary; **cosine similarity** between the company vector and the averaged reference vector yields a 0–100 thesis score. The closest single portfolio comp (e.g., Navro, Synthera AI, Threatfabric) is surfaced as an explainability anchor.
-
-Every output includes structured reasons: filter explanations for exclusions; positive drivers and caution flags for ranked companies.
+**Thesis similarity method:** Company document (name, sector, founders, pitch, stage, geo, founding year) tokenized; TF-IDF vectors computed; cosine similarity vs. averaged reference corpus. Closest single portfolio comp (e.g. Navro, Synthera AI, Threatfabric) shown for explainability.
 
 ## (c) AI vs. manual judgment
 
 | Component | Automation | Manual judgment |
 |-----------|------------|-----------------|
-| Stage / geo gates | Rule-based | Stage definitions, EU country list |
-| Thesis similarity | TF-IDF + cosine (deterministic NLP) | Portfolio corpus curation from Motive website |
-| Sector / traction / founders | Heuristic parsers + keyword rules | Weight tuning, off-thesis sector list, tier-1 employer list |
-| Final tier cutoffs | Score thresholds | Chosen to produce a manageable shortlist (~top third as Priority) |
-| Top 3 investment picks | Informed by tool output | Human synthesis for memo quality and risk specificity |
+| Stage / geo / fintech gates | Rule-based | EU country list, non-fintech sector definitions |
+| Portfolio sector weights | Derived from 41 investments on Motive website | Sector taxonomy keyword patterns |
+| Thesis similarity | TF-IDF + cosine (deterministic) | Corpus curation from portfolio page |
+| Traction / founders / age | Heuristic parsers | Weight tuning, tier-1 employer list, age-by-stage windows |
+| Tier cutoffs | Score thresholds | Calibrated to ~top third Priority Review |
+| Top 3 picks | Informed by tool output | Human synthesis for memo quality |
 
-No external LLM API is required — the “AI-assisted” layer is reproducible NLP (TF-IDF embeddings), which is appropriate for a 2–3 hour prototype and avoids non-deterministic outputs.
+No external LLM API — reproducible NLP appropriate for a 2–3 hour prototype.
 
 ## (d) Scaling to 10× volume or a different mandate
 
-**10× volume:** Move scoring to a backend worker (Python/FastAPI or Affinity webhook). Cache TF-IDF reference vectors; batch-process CSV/API ingest. Route Priority tier to Slack via Affinity integration (pattern Motive already uses). Store component scores + reasons in Affinity custom fields for auditability.
+**10× volume:** Backend worker (Python/FastAPI or Affinity webhook); cache TF-IDF reference vectors; route Priority tier to Slack; store component scores + reasons in Affinity custom fields.
 
-**Different mandate:** Parameterize `MOTIVE_MANDATE` (stages, geographies, sectors), rebuild reference corpus from the relevant portfolio slice, and re-tune weights. For a growth fund, drop stage gate, add ARR/revenue thresholds and capital efficiency metrics. For a new geography (e.g., APAC), swap geo rules and portfolio references. The explainability layer (reason strings per rule) stays unchanged.
+**Different mandate:** Parameterize `MOTIVE_MANDATE`, `MOTIVE_SECTOR_TAXONOMY`, and `SCORING_WEIGHTS`; rebuild corpus from relevant portfolio slice. Growth fund: drop stage gate, add ARR thresholds. New geography: swap geo rules and portfolio references.
 
-**Optional upgrade:** Replace TF-IDF with sentence-transformer embeddings for richer semantics; add a lightweight LLM step only for pitch summarization, keeping numeric scores rule-based for consistency.
+**Optional upgrade:** Sentence-transformer embeddings; LLM for pitch summarization only, keeping numeric scores rule-based.
 
 ---
 
-**How to run:** Open `triage-app/index.html` in Chrome/Edge → click **Run demo on sample data** or upload the provided CSV → export ranked output.
+**How to run:** https://colto57.github.io/motive-pipeline-triage/ → upload CSV or run demo → export ranked output.

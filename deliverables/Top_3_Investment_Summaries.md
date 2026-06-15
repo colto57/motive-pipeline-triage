@@ -1,6 +1,6 @@
 # Top 3 Investment Recommendations
 
-*Selected from the mandate-filtered shortlist produced by the triage tool.*
+*Selected from the mandate-filtered shortlist (Pre-Seed – Series A · US/Europe · fintech only). Non-fintech submissions (e.g. HR Tech, logistics, pure healthcare IT) are now hard-filtered before ranking.*
 
 ---
 

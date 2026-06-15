@@ -382,6 +382,12 @@ h1 {
   padding: 24px;
 }
 
+.methodology-intro {
+  margin: 0 0 20px;
+  color: var(--text-muted);
+  max-width: 72ch;
+}
+
 .method-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

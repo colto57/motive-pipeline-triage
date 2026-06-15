@@ -27,10 +27,10 @@ Case study deliverable: a working, explainable triage prototype + written memos.
 
 ## How the tool works
 
-1. **Mandate gates** — filters out non Pre-Seed–Series A and non US/Europe companies with explicit reasons.
-2. **Thesis similarity** — TF-IDF cosine similarity vs. Motive venture thesis + 37 venture portfolio references.
-3. **Multi-factor ranking** — sector fit, traction parsing, founder heuristics, stage fit — each with human-readable reasons.
-4. **Tiers** — Priority Review / Standard Review / Low Priority.
+1. **Strict mandate gates** — Pre-Seed–Series A, US/Europe, core fintech only (non-fintech filtered with reasons).
+2. **Portfolio-calibrated scoring** — weights derived from 41 Motive venture investments (sector mix, geography, company age, hub cities).
+3. **Thesis similarity** — TF-IDF cosine vs Motive venture thesis + portfolio references.
+4. **Tiers** — Priority Review / Standard Review / Low Priority with explainable component scores.
 
 ## Submission checklist
 
