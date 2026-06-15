@@ -10,7 +10,7 @@
 
 
 
-The triage system enforces Motive Partners’ stated **venture mandate** — Pre-Seed through Series A, US/Europe only, core fintech — then ranks survivors using weights **calibrated from 38 Motive venture portfolio companies** listed on [motivepartners.com/portfolio](https://motivepartners.com/portfolio).
+The triage system enforces Motive Partners’ stated **venture mandate** — Pre-Seed through Series A, US/Europe only — then ranks all in-mandate companies using weights **calibrated from 38 Motive venture portfolio companies** listed on [motivepartners.com/portfolio](https://motivepartners.com/portfolio). Adjacent tech sectors (HR Tech, PropTech, etc.) remain in the pipeline but are **deprioritized via scoring**, not hard-filtered.
 
 
 
@@ -58,7 +58,7 @@ The triage system enforces Motive Partners’ stated **venture mandate** — Pre
 
 
 
-### Hard filters (strict — must pass all three)
+### Hard filters (strict — must pass both)
 
 
 
@@ -66,7 +66,13 @@ The triage system enforces Motive Partners’ stated **venture mandate** — Pre
 
 2. **Geography:** US or Europe HQ (e.g. Singapore excluded)  
 
-3. **Sector:** Core fintech only — HR Tech, PropTech/CRE ops, logistics, pure healthcare IT, standalone climate/ESG, and non-wealth RE tech are **filtered out** with explicit reasons
+
+
+### Sector handling (soft — deprioritize, do not exclude)
+
+
+
+Adjacent tech sectors — HR Tech, PropTech/CRE ops, logistics, pure healthcare IT, standalone climate/ESG, and non-wealth RE tech — **stay in the shortlist** with scoring penalties and caution flags (e.g. *"Adjacent sector — lower Motive venture priority vs core fintech"*). Core fintech (payments, banking infra, regtech, insurtech, etc.) scores highest on portfolio sector fit.
 
 
 
@@ -138,7 +144,7 @@ The triage system enforces Motive Partners’ stated **venture mandate** — Pre
 
 
 
-**Thesis similarity method:** Company document tokenized; TF-IDF vectors; cosine similarity vs. averaged reference corpus. Closest portfolio comp shown for explainability.
+**Thesis similarity method:** Company document tokenized; TF-IDF vectors; cosine similarity vs. averaged reference corpus. Raw cosine scores (typically 0.03–0.16) are rescaled to 0–100 via `25 + cosine × 400` (cap 95) so the component is comparable to other factors. Closest portfolio comp shown for explainability.
 
 
 
@@ -184,7 +190,8 @@ Supported alias examples: `company`, `name`, `startup` → company_name · `url`
 
 |-----------|------------|-----------------|
 
-| Stage / geo / fintech gates | Rule-based | EU country list, non-fintech sector definitions |
+| Stage / geo gates | Rule-based | EU country list, stage normalization |
+| Adjacent-sector deprioritization | Scoring penalty + caution flags | Sector taxonomy keyword patterns |
 
 | Portfolio sector weights | Derived from 38-company corpus | Sector taxonomy keyword patterns |
 
@@ -218,6 +225,6 @@ No external LLM API — reproducible NLP appropriate for a 2–3 hour prototype.
 
 
 
-**How to run:** https://colto57.github.io/motive-pipeline-triage/ → upload CSV or run demo → export ranked output.
+**How to run:** https://colto57.github.io/motive-pipeline-triage/ → upload CSV → export ranked output.
 
 
