@@ -1082,44 +1082,8 @@ function applyMandateFilters(row) {
   };
 }
 
-const SOURCE_LINKS = {
-  portfolio: { href: "https://motivepartners.com/portfolio", label: "Motive portfolio" },
-  motive: { href: "https://motivepartners.com", label: "Motive Partners" },
-  thesisMethod: { href: "#thesis-similarity", label: "methodology" },
-  sectorMethod: { href: "#portfolio-sector-fit", label: "sector weighting" },
-  mandateGates: { href: "#mandate-gates", label: "mandate gates" },
-};
-
-function mkReason(text, linkKey = null) {
-  const reason = { text };
-  if (linkKey && SOURCE_LINKS[linkKey]) {
-    reason.href = SOURCE_LINKS[linkKey].href;
-    reason.label = SOURCE_LINKS[linkKey].label;
-  }
-  return reason;
-}
-
-const PORTFOLIO_HREF = SOURCE_LINKS.portfolio.href;
-
-function isPortfolioHref(href) {
-  return href === PORTFOLIO_HREF;
-}
-
-/** Keep at most one Motive venture portfolio link across highlight + caution bullets. */
-function enforceSinglePortfolioLink(highlights, cautions) {
-  let portfolioUsed = false;
-
-  const normalize = (reason) => {
-    if (!isPortfolioHref(reason.href)) return reason;
-    if (portfolioUsed) return { text: reason.text };
-    portfolioUsed = true;
-    return reason;
-  };
-
-  return {
-    positiveReasons: highlights.map(normalize),
-    cautionReasons: cautions.map(normalize),
-  };
+function mkReason(text) {
+  return { text };
 }
 
 function companyHash(name) {
@@ -1270,7 +1234,7 @@ function buildHighlightReasons(ctx) {
   if (componentScores.portfolioGapScore >= 75 && portfolioGap?.reasons?.[0]) {
     candidates.push({
       priority: componentScores.portfolioGapScore,
-      reason: mkReason(portfolioGap.reasons[0], "portfolio"),
+      reason: mkReason(portfolioGap.reasons[0]),
     });
   }
 
@@ -1295,13 +1259,12 @@ function buildHighlightReasons(ctx) {
             ],
             h + 2
           ),
-          weight >= 0.3 ? "portfolio" : "sectorMethod"
         ),
       });
     } else {
       candidates.push({
         priority: componentScores.portfolioSectorFit,
-        reason: mkReason(`Core fintech positioning in ${primaryLabel}.`, "sectorMethod"),
+        reason: mkReason(`Core fintech positioning in ${primaryLabel}.`),
       });
     }
 
@@ -1330,7 +1293,6 @@ function buildHighlightReasons(ctx) {
           ],
           h + 3
         ),
-        "portfolio"
       ),
     });
   }
@@ -1346,8 +1308,7 @@ function buildHighlightReasons(ctx) {
             `Positioning scores ${thesisScore}/100 against Motive's investment corpus.`,
           ],
           h + 4
-        ),
-        "thesisMethod"
+        )
       ),
     });
   }
@@ -1430,12 +1391,11 @@ function buildCautionReasons(ctx) {
   if (sectorFit.classification.sectorClass === "adjacent") {
     cautions.push(
       mkReason(
-        `Adjacent sector (${sectorFit.classification.adjacentLabel}) - lower priority than core fintech in Motive's venture book.`,
-        "portfolio"
+        `Adjacent sector (${sectorFit.classification.adjacentLabel}) - lower priority than core fintech in Motive's venture book.`
       )
     );
   } else if (sectorFit.classification.sectorClass === "weak") {
-    cautions.push(mkReason(`Weak fintech signal - may sit outside Motive's core venture thesis.`, "portfolio"));
+    cautions.push(mkReason(`Weak fintech signal - may sit outside Motive's core venture thesis.`));
   }
 
   if (checkSize.reasons.some((r) => r.includes("not disclosed"))) {
@@ -1470,8 +1430,7 @@ function buildCautionReasons(ctx) {
   if (infraMoat.reasons.some((r) => r.includes("B2C"))) {
     cautions.push(
       mkReason(
-        `B2C go-to-market - Motive's venture portfolio skews B2B financial infrastructure.`,
-        "portfolio"
+        `B2C go-to-market - Motive's venture portfolio skews B2B financial infrastructure.`
       )
     );
   }
@@ -1601,11 +1560,8 @@ function triageCompanies(rows) {
       mandate,
     };
 
-    const rawHighlights = mandate.passed ? buildHighlightReasons(reasonCtx) : [];
-    const rawCautions = mandate.passed ? buildCautionReasons(reasonCtx) : [];
-    const { positiveReasons, cautionReasons } = mandate.passed
-      ? enforceSinglePortfolioLink(rawHighlights, rawCautions)
-      : { positiveReasons: [], cautionReasons: [] };
+    const positiveReasons = mandate.passed ? buildHighlightReasons(reasonCtx) : [];
+    const cautionReasons = mandate.passed ? buildCautionReasons(reasonCtx) : [];
     const safeWebsiteUrl = sanitizeWebsiteUrl(row.website);
 
     let tier = "Filtered Out";

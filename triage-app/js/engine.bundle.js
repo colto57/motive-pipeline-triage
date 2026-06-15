@@ -37,11 +37,11 @@ const MOTIVE_MANDATE = {
 
 /**
  * Observed venture portfolio mix (38 companies in similarity corpus, June 2026).
- * Source: motivepartners.com/portfolio · Venture strategy filter.
+ * Source: motivepartners.com/portfolio Â· Venture strategy filter.
  * Total Venture on site = 41 (includes 4 realized); corpus excludes 3 realized (Corastone, Februar, Vitera).
  */
 const MOTIVE_PORTFOLIO_ANALYTICS = {
-  source: "motivepartners.com/portfolio · Venture strategy",
+  source: "motivepartners.com/portfolio Â· Venture strategy",
   sampleSize: 38,
   totalVentureOnSite: 41,
   activeVentureOnSite: 37,
@@ -134,7 +134,7 @@ const MOTIVE_SECTOR_TAXONOMY = [
   },
 ];
 
-/** Adjacent tech sectors — kept in pipeline but deprioritized vs core fintech */
+/** Adjacent tech sectors â€” kept in pipeline but deprioritized vs core fintech */
 const ADJACENT_SECTORS = [
   { pattern: /hr technology|human resources|workforce planning|headcount|compensation benchmarking/i, label: "HR Technology" },
   { pattern: /proptech|commercial real estate buildings|access control|energy management|tenant experience/i, label: "PropTech / CRE operations" },
@@ -268,7 +268,7 @@ function buildPortfolioAnalytics(portfolio = MOTIVE_VENTURE_PORTFOLIO) {
   ).map((s) => s.key);
 
   return {
-    source: "motivepartners.com/portfolio · Venture strategy",
+    source: "motivepartners.com/portfolio Â· Venture strategy",
     sampleSize: n,
     stageMix,
     stageCounts,
@@ -574,7 +574,7 @@ function scaleThesisSimilarity(cosineSim) {
 function parseMoney(text) {
   const arrMatch = text.match(/\$([\d.]+)\s*([mbk])\s*arr/i);
   const gmvMatch = text.match(/\$([\d.]+)\s*([mbn])\+?\s*gmv/i);
-  const raiseMatch = text.match(/(?:raising|raise)\s+[£€$]?([\d.]+)\s*([mbk])/i);
+  const raiseMatch = text.match(/(?:raising|raise)\s+[Â£â‚¬$]?([\d.]+)\s*([mbk])/i);
 
   const toNumber = (value, unit) => {
     const mult = { k: 1e3, m: 1e6, b: 1e9, n: 1e9 }[unit.toLowerCase()] || 1;
@@ -892,7 +892,7 @@ function scorePortfolioStageAffinity(stage) {
   if (normalized === topStage) {
     score = 95;
     reasons.push(
-      `${capitalizeStage(normalized)} stage aligns with ${pct}% of Motive's venture deployments (n=${PORTFOLIO_N} active corpus) — highest portfolio affinity.`
+      `${capitalizeStage(normalized)} stage aligns with ${pct}% of Motive's venture deployments (n=${PORTFOLIO_N} active corpus) â€” highest portfolio affinity.`
     );
   } else if (mix >= 0.3) {
     score = 82 + Math.round(mix * 30);
@@ -902,12 +902,12 @@ function scorePortfolioStageAffinity(stage) {
   } else if (mix >= 0.15) {
     score = 68 + Math.round(mix * 40);
     reasons.push(
-      `${capitalizeStage(normalized)} is ${pct}% of Motive venture entries — in mandate but less frequent than ${capitalizeStage(topStage)} (${Math.round((STAGE_MIX[topStage] || 0) * 100)}%).`
+      `${capitalizeStage(normalized)} is ${pct}% of Motive venture entries â€” in mandate but less frequent than ${capitalizeStage(topStage)} (${Math.round((STAGE_MIX[topStage] || 0) * 100)}%).`
     );
   } else {
     score = 58;
     reasons.push(
-      `${capitalizeStage(normalized)} is ${pct}% of Motive venture entries — acceptable within mandate but below historical deployment frequency.`
+      `${capitalizeStage(normalized)} is ${pct}% of Motive venture entries â€” acceptable within mandate but below historical deployment frequency.`
     );
   }
 
@@ -1008,7 +1008,7 @@ function scoreFounderExecutionIndex(row) {
 
   if (/first[- ]time founders?/i.test(text)) {
     score = Math.min(score, 52);
-    reasons.push("First-time founders — execution index capped pending reference checks.");
+    reasons.push("First-time founders â€” execution index capped pending reference checks.");
   }
 
   if (signals.length) {
@@ -1034,10 +1034,10 @@ function scoreTractionVelocity(row, stage) {
   if (metrics.arr == null || ageMonths == null) {
     if (metrics.gmv != null) {
       score = 58;
-      reasons.push("GMV-based business — ARR velocity benchmark not directly applicable.");
+      reasons.push("GMV-based business â€” ARR velocity benchmark not directly applicable.");
     } else if (metrics.designPartners) {
       score = 52;
-      reasons.push("Institutional pilots — revenue velocity still forming.");
+      reasons.push("Institutional pilots â€” revenue velocity still forming.");
     } else {
       score = 38;
       reasons.push("Insufficient ARR + founding date to compute monthly revenue velocity.");
@@ -1055,28 +1055,28 @@ function scoreTractionVelocity(row, stage) {
   if (monthlyVelocity >= bench.p75) {
     score = 92;
     reasons.push(
-      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity — top quartile for ${capitalizeStage(stage)} (p75 ~$${Math.round(bench.p75 / 1000)}k/mo).`
+      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity â€” top quartile for ${capitalizeStage(stage)} (p75 ~$${Math.round(bench.p75 / 1000)}k/mo).`
     );
   } else if (monthlyVelocity >= bench.p50) {
     score = 78;
     reasons.push(
-      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity — above median for ${capitalizeStage(stage)} (p50 ~$${Math.round(bench.p50 / 1000)}k/mo).`
+      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity â€” above median for ${capitalizeStage(stage)} (p50 ~$${Math.round(bench.p50 / 1000)}k/mo).`
     );
   } else if (monthlyVelocity >= bench.p25) {
     score = 62;
     reasons.push(
-      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity — between p25–p50 for ${capitalizeStage(stage)}.`
+      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity â€” between p25â€“p50 for ${capitalizeStage(stage)}.`
     );
   } else if (monthlyVelocity > 0) {
     score = 45;
     reasons.push(
-      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity — below p25 for ${capitalizeStage(stage)} (~$${Math.round(bench.p25 / 1000)}k/mo).`
+      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity â€” below p25 for ${capitalizeStage(stage)} (~$${Math.round(bench.p25 / 1000)}k/mo).`
     );
   }
 
   if (metrics.growth != null && metrics.growth >= 100) {
     score = Math.min(95, score + 12);
-    reasons.push(`Growth multiplier: ${metrics.growthLabel || metrics.growth + "%"} — velocity accelerating.`);
+    reasons.push(`Growth multiplier: ${metrics.growthLabel || metrics.growth + "%"} â€” velocity accelerating.`);
   } else if (metrics.growth != null && metrics.growth >= 50) {
     score = Math.min(92, score + 7);
     reasons.push(`Growth multiplier: ${metrics.growthLabel || metrics.growth + "%"} boosts velocity outlook.`);
@@ -1093,13 +1093,13 @@ function scorePortfolioGap(row, sectorFit) {
   if (classification.sectorClass !== "core") {
     return {
       score: 28,
-      reasons: ["Adjacent/off-thesis sector — no white-space bonus for portfolio expansion."],
+      reasons: ["Adjacent/off-thesis sector â€” no white-space bonus for portfolio expansion."],
     };
   }
 
   const primary = sectorFit.primarySector;
   if (!primary) {
-    return { score: 40, reasons: ["Sector unclassified — cannot assess portfolio gap opportunity."] };
+    return { score: 40, reasons: ["Sector unclassified â€” cannot assess portfolio gap opportunity."] };
   }
 
   const weight = primary.portfolioWeight;
@@ -1110,22 +1110,22 @@ function scorePortfolioGap(row, sectorFit) {
   if (underweightKeys.includes(primary.key)) {
     score = 88;
     reasons.push(
-      `${primary.label} is ${pct}% of Motive portfolio (<${Math.round(underweightThreshold * 100)}%) — white-space thesis expansion opportunity with low concentration risk.`
+      `${primary.label} is ${pct}% of Motive portfolio (<${Math.round(underweightThreshold * 100)}%) â€” white-space thesis expansion opportunity with low concentration risk.`
     );
   } else if (weight <= 0.12) {
     score = 72;
     reasons.push(
-      `${primary.label} is ${pct}% of Motive portfolio — room to add without concentration risk.`
+      `${primary.label} is ${pct}% of Motive portfolio â€” room to add without concentration risk.`
     );
   } else if (weight >= 0.3) {
     score = 55;
     reasons.push(
-      `${primary.label} is ${pct}% of Motive portfolio — strong fit but dense cluster (limited novelty bonus).`
+      `${primary.label} is ${pct}% of Motive portfolio â€” strong fit but dense cluster (limited novelty bonus).`
     );
   } else {
     score = 64;
     reasons.push(
-      `${primary.label} is ${pct}% of Motive portfolio — balanced sector weight with moderate expansion room.`
+      `${primary.label} is ${pct}% of Motive portfolio â€” balanced sector weight with moderate expansion room.`
     );
   }
 
@@ -1430,44 +1430,8 @@ function applyMandateFilters(row) {
   };
 }
 
-const SOURCE_LINKS = {
-  portfolio: { href: "https://motivepartners.com/portfolio", label: "Motive portfolio" },
-  motive: { href: "https://motivepartners.com", label: "Motive Partners" },
-  thesisMethod: { href: "#thesis-similarity", label: "methodology" },
-  sectorMethod: { href: "#portfolio-sector-fit", label: "sector weighting" },
-  mandateGates: { href: "#mandate-gates", label: "mandate gates" },
-};
-
-function mkReason(text, linkKey = null) {
-  const reason = { text };
-  if (linkKey && SOURCE_LINKS[linkKey]) {
-    reason.href = SOURCE_LINKS[linkKey].href;
-    reason.label = SOURCE_LINKS[linkKey].label;
-  }
-  return reason;
-}
-
-const PORTFOLIO_HREF = SOURCE_LINKS.portfolio.href;
-
-function isPortfolioHref(href) {
-  return href === PORTFOLIO_HREF;
-}
-
-/** Keep at most one Motive venture portfolio link across highlight + caution bullets. */
-function enforceSinglePortfolioLink(highlights, cautions) {
-  let portfolioUsed = false;
-
-  const normalize = (reason) => {
-    if (!isPortfolioHref(reason.href)) return reason;
-    if (portfolioUsed) return { text: reason.text };
-    portfolioUsed = true;
-    return reason;
-  };
-
-  return {
-    positiveReasons: highlights.map(normalize),
-    cautionReasons: cautions.map(normalize),
-  };
+function mkReason(text) {
+  return { text };
 }
 
 function companyHash(name) {
@@ -1618,7 +1582,7 @@ function buildHighlightReasons(ctx) {
   if (componentScores.portfolioGapScore >= 75 && portfolioGap?.reasons?.[0]) {
     candidates.push({
       priority: componentScores.portfolioGapScore,
-      reason: mkReason(portfolioGap.reasons[0], "portfolio"),
+      reason: mkReason(portfolioGap.reasons[0]),
     });
   }
 
@@ -1643,13 +1607,12 @@ function buildHighlightReasons(ctx) {
             ],
             h + 2
           ),
-          weight >= 0.3 ? "portfolio" : "sectorMethod"
         ),
       });
     } else {
       candidates.push({
         priority: componentScores.portfolioSectorFit,
-        reason: mkReason(`Core fintech positioning in ${primaryLabel}.`, "sectorMethod"),
+        reason: mkReason(`Core fintech positioning in ${primaryLabel}.`),
       });
     }
 
@@ -1678,7 +1641,6 @@ function buildHighlightReasons(ctx) {
           ],
           h + 3
         ),
-        "portfolio"
       ),
     });
   }
@@ -1694,8 +1656,7 @@ function buildHighlightReasons(ctx) {
             `Positioning scores ${thesisScore}/100 against Motive's investment corpus.`,
           ],
           h + 4
-        ),
-        "thesisMethod"
+        )
       ),
     });
   }
@@ -1778,12 +1739,11 @@ function buildCautionReasons(ctx) {
   if (sectorFit.classification.sectorClass === "adjacent") {
     cautions.push(
       mkReason(
-        `Adjacent sector (${sectorFit.classification.adjacentLabel}) - lower priority than core fintech in Motive's venture book.`,
-        "portfolio"
+        `Adjacent sector (${sectorFit.classification.adjacentLabel}) - lower priority than core fintech in Motive's venture book.`
       )
     );
   } else if (sectorFit.classification.sectorClass === "weak") {
-    cautions.push(mkReason(`Weak fintech signal - may sit outside Motive's core venture thesis.`, "portfolio"));
+    cautions.push(mkReason(`Weak fintech signal - may sit outside Motive's core venture thesis.`));
   }
 
   if (checkSize.reasons.some((r) => r.includes("not disclosed"))) {
@@ -1818,8 +1778,7 @@ function buildCautionReasons(ctx) {
   if (infraMoat.reasons.some((r) => r.includes("B2C"))) {
     cautions.push(
       mkReason(
-        `B2C go-to-market - Motive's venture portfolio skews B2B financial infrastructure.`,
-        "portfolio"
+        `B2C go-to-market - Motive's venture portfolio skews B2B financial infrastructure.`
       )
     );
   }
@@ -1949,11 +1908,8 @@ function triageCompanies(rows) {
       mandate,
     };
 
-    const rawHighlights = mandate.passed ? buildHighlightReasons(reasonCtx) : [];
-    const rawCautions = mandate.passed ? buildCautionReasons(reasonCtx) : [];
-    const { positiveReasons, cautionReasons } = mandate.passed
-      ? enforceSinglePortfolioLink(rawHighlights, rawCautions)
-      : { positiveReasons: [], cautionReasons: [] };
+    const positiveReasons = mandate.passed ? buildHighlightReasons(reasonCtx) : [];
+    const cautionReasons = mandate.passed ? buildCautionReasons(reasonCtx) : [];
     const safeWebsiteUrl = sanitizeWebsiteUrl(row.website);
 
     let tier = "Filtered Out";

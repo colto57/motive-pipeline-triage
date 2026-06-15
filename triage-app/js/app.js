@@ -551,15 +551,9 @@
       return false;
     }
 
-    function renderReason(reason, companyWebsite) {
+    function renderReason(reason) {
       if (typeof reason === "string") return escapeHtml(reason);
-      const text = escapeHtml(reason.text || "");
-      if (reason.href && isTrustedLink(reason.href, companyWebsite)) {
-        const href = escapeHtml(reason.href);
-        const label = escapeHtml(reason.label || "source");
-        return `${text} (<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>)`;
-      }
-      return text;
+      return escapeHtml(reason.text || "");
     }
 
     function escapeHtml(value) {
