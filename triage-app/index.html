@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Motive Pipeline Triage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Motive Partners · Venture Pipeline</p>
+          <h1>AI-Assisted Deal Triage</h1>
+          <p class="lede">
+            Upload inbound CSV submissions to filter against Motive's venture mandate
+            (Pre-Seed – Series A · US/Europe · Fintech) and rank the remainder with
+            explainable scores grounded in thesis similarity to Motive's venture portfolio.
+          </p>
+        </div>
+        <div class="hero-card">
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="csvInput" accept=".csv,text/csv" hidden />
+            <div class="upload-icon">↑</div>
+            <p class="upload-title">Drop CSV here or click to upload</p>
+            <p class="upload-sub">Uses the provided inbound pipeline format</p>
+            <button type="button" class="btn secondary" id="demoBtn">Run demo on sample data</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="stats hidden" id="statsSection">
+        <div class="stat">
+          <span class="stat-label">Total submissions</span>
+          <span class="stat-value" id="statTotal">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">In mandate</span>
+          <span class="stat-value accent" id="statShortlist">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Filtered out</span>
+          <span class="stat-value muted" id="statFiltered">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Priority review</span>
+          <span class="stat-value hot" id="statPriority">0</span>
+        </div>
+      </section>
+
+      <section class="panel hidden" id="resultsSection">
+        <div class="panel-header">
+          <div>
+            <h2>Prioritized shortlist</h2>
+            <p class="panel-sub">Ranked by weighted score with component breakdown and rationale.</p>
+          </div>
+          <button type="button" class="btn" id="exportBtn">Export ranked CSV</button>
+        </div>
+        <div id="shortlistCards" class="cards"></div>
+      </section>
+
+      <section class="panel hidden" id="filteredSection">
+        <div class="panel-header">
+          <div>
+            <h2>Filtered out</h2>
+            <p class="panel-sub">Companies excluded from venture shortlist with explicit reasons.</p>
+          </div>
+        </div>
+        <div id="filteredCards" class="cards compact"></div>
+      </section>
+
+      <section class="methodology">
+        <h2>How scoring works</h2>
+        <div class="method-grid">
+          <article>
+            <h3>1 · Mandate gates</h3>
+            <p>Hard filters on stage (Pre-Seed – Series A) and geography (US/Europe). Failures never enter the ranked shortlist.</p>
+          </article>
+          <article>
+            <h3>2 · Thesis similarity</h3>
+            <p>TF-IDF vectors compare each pitch to Motive's venture thesis statements and 37 venture portfolio references; cosine similarity becomes a 0–100 score.</p>
+          </article>
+          <article>
+            <h3>3 · Multi-factor rank</h3>
+            <p>Remaining companies score on sector fit, traction parsing, founder signals, and stage fit — each with human-readable reasons.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <template id="companyCardTemplate">
+      <article class="company-card">
+        <div class="card-top">
+          <div>
+            <div class="company-meta">
+              <span class="rank"></span>
+              <span class="tier badge"></span>
+            </div>
+            <h3 class="company-name"></h3>
+            <p class="company-sub"></p>
+          </div>
+          <div class="score-block">
+            <span class="score-value"></span>
+            <span class="score-label">Overall</span>
+          </div>
+        </div>
+        <div class="score-bars"></div>
+        <div class="reasons"></div>
+      </article>
+    </template>
+
+    <script src="js/motive_reference.js"></script>
+    <script src="js/triage_engine.js"></script>
+    <script src="js/sample_data.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
