@@ -71,10 +71,30 @@ const STAGE_ORDER = {
 const TIER1_COMPANIES =
   /\b(stripe|jpmorgan|jp morgan|goldman sachs|visa|mastercard|paypal|square|brex|plaid|coinbase|a16z|openai|anthropic|mckinsey|bloomberg|ubs|credit suisse|worldpay|adyen|klarna|salesforce|workday|linkedin|blackstone|yardi|citadel|aws|amazon|nubank|grab|truelayer|harvey ai|kirkland|munich re|ondeck|kabbage|epic|athenahealth|fedex|flexport|prudential|palantir|nutmeg|moneybox|worldpay)\b/i;
 
-const SERIAL_FOUNDER = /\b(serial founder|previously built and sold|sold .+ to)\b/i;
+const SERIAL_FOUNDER = /\b(serial founder|previously built and sold|sold .+ to|prior exit|second[- ]time founder)\b/i;
 
 const SENIOR_TITLES =
   /\b(ceo|cto|coo|cfo|chief|head of|vp |vice president|director|managing partner|co-founder)\b/i;
+
+const FINTECH_DOMAIN =
+  /\b(fintech|financial services|banking|payments|wealth|insurance|capital markets|underwriting|compliance|treasury|lending|neobank|open banking|embedded finance|transaction banking|private banking|actuary|insurtech)\b/i;
+
+const TOP_HUB_CITIES = new Set(["new york", "nyc", "london", "berlin"]);
+
+const SECONDARY_HUB_CITIES = new Set([
+  "san francisco",
+  "paris",
+  "amsterdam",
+  "munich",
+  "hamburg",
+  "cologne",
+  "barcelona",
+  "miami",
+  "los angeles",
+  "boston",
+  "chicago",
+  "zurich",
+]);
 
 function tokenize(text) {
   return (text || "")
@@ -165,6 +185,12 @@ function cosineSimilarity(a, b) {
   }
   if (normA === 0 || normB === 0) return 0;
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+/** Rescale raw TF-IDF cosine (typically 0.02-0.18) to an interpretable 0-100 score. */
+function scaleThesisSimilarity(cosineSim) {
+  const score = Math.round(25 + cosineSim * 400);
+  return Math.max(0, Math.min(95, score));
 }
 
 function parseMoney(text) {
@@ -269,23 +295,35 @@ function scorePortfolioSectorFit(row) {
 }
 
 function scoreGeographyAffinity(geo, hq) {
-  let score = 72;
   const reasons = [];
+  let score;
+
+  if (!geo.inMandate) {
+    return { score: 0, reasons: [`HQ "${hq}" is outside US/Europe mandate.`] };
+  }
+
+  const hub = geo.hub || "";
+  if (TOP_HUB_CITIES.has(hub)) {
+    score = hub === "berlin" || hub === "london" ? 94 : 92;
+  } else if (SECONDARY_HUB_CITIES.has(hub)) {
+    score = hub === "san francisco" || hub === "paris" ? 84 : 78;
+  } else {
+    score = geo.isUS ? 64 : 58;
+  }
 
   if (geo.isUS) {
-    score += 6;
+    score += 2;
     reasons.push(`US HQ fits Motive venture mandate (~${US_SHARE}% of venture portfolio).`);
   }
   if (geo.isEurope) {
-    score += 6;
+    score += 2;
     reasons.push(`Europe HQ fits Motive venture mandate (~${EU_SHARE}% of venture portfolio).`);
   }
 
-  if (geo.hub) {
-    score += 14;
-    reasons.push(
-      `Located in ${geo.hub.replace(/\b\w/g, (c) => c.toUpperCase())} - a core Motive venture hub (NYC, Berlin, London, etc.).`
-    );
+  if (hub) {
+    const hubLabel = hub.replace(/\b\w/g, (c) => c.toUpperCase());
+    const tierLabel = TOP_HUB_CITIES.has(hub) ? "top" : "secondary";
+    reasons.push(`Located in ${hubLabel} - a ${tierLabel} Motive venture hub.`);
   } else {
     reasons.push(`HQ "${hq}" is in-mandate but not a top historical Motive venture hub city.`);
   }
@@ -307,19 +345,29 @@ function scoreCompanyAge(row, stage) {
     };
   }
 
-  let score = 45;
+  let score;
+  const idealCenter = (profile.idealMin + profile.idealMax) / 2;
+  const halfWindow = Math.max((profile.idealMax - profile.idealMin) / 2, 0.5);
+
   if (age >= profile.idealMin && age <= profile.idealMax) {
-    score = 92;
+    const distFromCenter = Math.abs(age - idealCenter);
+    score = Math.round(95 - (distFromCenter / halfWindow) * 12);
     reasons.push(
       `Company age (${age} yrs, founded ${foundingYear}) matches Motive's typical ${stage} profile (${profile.label}).`
     );
+  } else if (age < profile.idealMin) {
+    score = age <= 0 ? 68 : 74;
+    reasons.push(
+      `Company age (${age} yrs) is young for ${stage} - acceptable but earlier than Motive's ideal ${profile.label} window.`
+    );
   } else if (age <= profile.acceptableMax) {
-    score = 72;
+    const yearsOver = age - profile.idealMax;
+    score = Math.round(78 - yearsOver * 6);
     reasons.push(
       `Company age (${age} yrs) is acceptable for ${stage}, though slightly outside the ideal ${profile.label} window.`
     );
   } else {
-    score = 48;
+    score = Math.max(45, 58 - (age - profile.acceptableMax) * 5);
     reasons.push(
       `Company age (${age} yrs) is mature for ${stage} - Motive venture typically backs younger companies at this stage.`
     );
@@ -400,32 +448,49 @@ function scoreTraction(row) {
 
 function scoreFounders(row) {
   const text = row.founder_background || "";
-  let score = 32;
+  let score = 40;
   const reasons = [];
+  let signalCount = 0;
 
   if (SERIAL_FOUNDER.test(text)) {
-    score += 32;
+    score += 35;
+    signalCount += 1;
     reasons.push("Serial founder with prior exit - recurring pattern in Motive portfolio.");
   }
 
-  if (TIER1_COMPANIES.test(text)) {
-    score += 28;
+  const tier1Matches = text.match(new RegExp(TIER1_COMPANIES.source, "gi")) || [];
+  if (tier1Matches.length >= 2) {
+    score += 32;
+    signalCount += 1;
+    reasons.push("Multiple tier-1 fintech / financial services operator backgrounds.");
+  } else if (tier1Matches.length === 1) {
+    score += 24;
+    signalCount += 1;
     reasons.push("Tier-1 fintech / financial services operator background.");
   } else if (SENIOR_TITLES.test(text)) {
-    score += 14;
+    score += 12;
+    signalCount += 1;
     reasons.push("Senior operator titles indicate relevant domain leadership.");
   }
 
-  if (/first-time founders/i.test(text)) {
-    score -= 12;
+  if (FINTECH_DOMAIN.test(text)) {
+    score += 14;
+    signalCount += 1;
+    reasons.push("Explicit fintech / financial services domain experience in founder background.");
+  }
+
+  if (/first[- ]time founders?/i.test(text)) {
+    score = Math.min(score, 48);
+    score -= 8;
     reasons.push("First-time founders - requires deeper team diligence.");
   }
 
-  if (reasons.length === 0) {
-    reasons.push("Founder signal neutral from available text.");
+  if (signalCount === 0) {
+    score = 38;
+    reasons.push("Limited founder signal from available text - neutral/low conviction.");
   }
 
-  return { score: Math.max(0, Math.min(100, score)), reasons };
+  return { score: Math.max(25, Math.min(95, score)), reasons };
 }
 
 function scoreStageFit(stage) {
@@ -754,7 +819,7 @@ function triageCompanies(rows) {
     const companyDoc = buildCompanyDocument(row);
     const companyVec = tfidfVector(companyDoc, idf);
     const thesisSimilarity = cosineSimilarity(companyVec, referenceComposite);
-    const thesisScore = roundScore(thesisSimilarity * 100);
+    const thesisScore = scaleThesisSimilarity(thesisSimilarity);
     const portfolioMatch = findBestPortfolioMatch(companyVec, idf);
 
     const sectorFit = scorePortfolioSectorFit(row);
