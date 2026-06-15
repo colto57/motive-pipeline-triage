@@ -16,7 +16,6 @@
     const uploadZone = document.getElementById("uploadZone");
     const csvInput = document.getElementById("csvInput");
     const uploadBtn = document.getElementById("uploadBtn");
-    const demoBtn = document.getElementById("demoBtn");
     const exportBtn = document.getElementById("exportBtn");
     const statusBanner = document.getElementById("statusBanner");
     const mappingSection = document.getElementById("mappingSection");
@@ -36,7 +35,7 @@
     const filteredCards = document.getElementById("filteredCards");
     const cardTemplate = document.getElementById("companyCardTemplate");
 
-    if (!uploadZone || !csvInput || !uploadBtn || !demoBtn || !statusBanner) {
+    if (!uploadZone || !csvInput || !uploadBtn || !statusBanner) {
       showFatalError("Upload UI failed to initialize. Please hard-refresh the page.");
       return;
     }
@@ -129,16 +128,6 @@
       uploadZone.classList.remove("dragover");
       const file = event.dataTransfer.files?.[0];
       if (file) handleFile(file);
-    });
-
-    demoBtn.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (!window.SAMPLE_INBOUND_CSV) {
-        setStatus("Sample data unavailable.", "error");
-        return;
-      }
-      runTriage(window.SAMPLE_INBOUND_CSV, "Loaded sample pipeline (25 companies).");
     });
 
     exportBtn?.addEventListener("click", () => {
