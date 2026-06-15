@@ -134,8 +134,8 @@ const MOTIVE_SECTOR_TAXONOMY = [
   },
 ];
 
-/** Hard-filter: sectors clearly outside Motive venture fintech focus */
-const NON_FINTECH_SECTORS = [
+/** Adjacent tech sectors — kept in pipeline but deprioritized vs core fintech */
+const ADJACENT_SECTORS = [
   { pattern: /hr technology|human resources|workforce planning|headcount|compensation benchmarking/i, label: "HR Technology" },
   { pattern: /proptech|commercial real estate buildings|access control|energy management|tenant experience/i, label: "PropTech / CRE operations" },
   { pattern: /logistics|supply chain|courier|last-mile|delivery times/i, label: "Logistics / supply chain" },
@@ -223,7 +223,7 @@ function buildReferenceCorpus() {
 }
 
 function classifyCompanySector(row) {
-  const text = `${row.sector} ${row.pitch_summary} ${row.founder_background}`.toLowerCase();
+  const text = `${row.sector} ${row.pitch_summary} ${row.founder_background}`;
   const matches = [];
 
   for (const sector of MOTIVE_SECTOR_TAXONOMY) {
@@ -232,24 +232,43 @@ function classifyCompanySector(row) {
     }
   }
 
-  for (const off of NON_FINTECH_SECTORS) {
-    if (off.pattern.test(text)) {
-      return { isFintech: false, offThesis: off.label, matches: [] };
+  for (const adjacent of ADJACENT_SECTORS) {
+    if (adjacent.pattern.test(text)) {
+      return {
+        sectorClass: "adjacent",
+        adjacentLabel: adjacent.label,
+        offThesis: adjacent.label,
+        isFintech: false,
+        matches,
+      };
     }
   }
 
   if (matches.length === 0) {
-    return { isFintech: false, offThesis: "Unclassified / weak fintech signal", matches: [] };
+    return {
+      sectorClass: "weak",
+      adjacentLabel: null,
+      offThesis: "Unclassified / weak fintech signal",
+      isFintech: false,
+      matches: [],
+    };
   }
 
-  return { isFintech: true, offThesis: null, matches };
+  return {
+    sectorClass: "core",
+    adjacentLabel: null,
+    offThesis: null,
+    isFintech: true,
+    matches,
+  };
 }
 
 window.MotiveReference = {
   MOTIVE_MANDATE,
   MOTIVE_PORTFOLIO_ANALYTICS,
   MOTIVE_SECTOR_TAXONOMY,
-  NON_FINTECH_SECTORS,
+  ADJACENT_SECTORS,
+  NON_FINTECH_SECTORS: ADJACENT_SECTORS,
   COMPANY_AGE_BY_STAGE,
   SCORING_WEIGHTS,
   MOTIVE_THESIS_STATEMENTS,

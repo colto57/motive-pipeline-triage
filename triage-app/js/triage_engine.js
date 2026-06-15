@@ -44,7 +44,7 @@ const DEFAULT_COMPANY_AGE_BY_STAGE = {
 };
 const AGE_BY_STAGE = COMPANY_AGE_BY_STAGE || DEFAULT_COMPANY_AGE_BY_STAGE;
 function defaultClassifyCompanySector() {
-  return { isFintech: true, offThesis: null, matches: [] };
+  return { sectorClass: "core", adjacentLabel: null, isFintech: true, offThesis: null, matches: [] };
 }
 const classifySector =
   typeof classifyCompanySector === "function" ? classifyCompanySector : defaultClassifyCompanySector;
@@ -197,43 +197,74 @@ function parseMoney(text) {
 function scorePortfolioSectorFit(row) {
   const classification = classifySector(row);
   const reasons = [];
+  const { sectorClass, adjacentLabel, matches } = classification;
 
-  if (!classification.isFintech) {
+  if (sectorClass === "core") {
+    const primary = classification.matches.sort(
+      (a, b) => b.portfolioWeight - a.portfolioWeight
+    )[0];
+
+    let score = Math.round(50 + primary.portfolioWeight * 140);
+
+    if (classification.matches.length > 1) {
+      score += 8;
+      reasons.push(
+        `Multi-vertical fintech fit: ${classification.matches.map((m) => m.label).join(" + ")}.`
+      );
+    }
+
+    reasons.unshift(
+      `Maps to ${primary.label} - ${Math.round(primary.portfolioWeight * 100)}% of Motive's venture portfolio (n=${PORTFOLIO_N}).`
+    );
+
+    if (/\bai\b|agent|llm|automation/i.test(`${row.sector} ${row.pitch_summary}`)) {
+      score += 6;
+      reasons.push("Verticalized AI theme aligns with Motive's 2024-2026 venture investment pattern.");
+    }
+
     return {
-      score: 0,
-      reasons: [`Sector outside Motive venture fintech focus (${classification.offThesis}).`],
+      score: Math.max(0, Math.min(100, score)),
+      reasons,
       classification,
-      primarySector: null,
+      primarySector: primary,
     };
   }
 
-  const primary = classification.matches.sort(
-    (a, b) => b.portfolioWeight - a.portfolioWeight
-  )[0];
+  if (sectorClass === "adjacent") {
+    let score;
+    let primarySector = null;
 
-  let score = Math.round(50 + primary.portfolioWeight * 140);
+    if (matches.length > 0) {
+      primarySector = matches.sort((a, b) => b.portfolioWeight - a.portfolioWeight)[0];
+      score = Math.round(50 + primarySector.portfolioWeight * 140) - 22;
+      reasons.push(
+        `Partial fintech overlap (${primarySector.label}) but company is primarily in an adjacent sector.`
+      );
+    } else {
+      score = 18;
+    }
 
-  if (classification.matches.length > 1) {
-    score += 8;
     reasons.push(
-      `Multi-vertical fintech fit: ${classification.matches.map((m) => m.label).join(" + ")}.`
+      `Adjacent sector (${adjacentLabel}) - lower Motive venture priority vs core fintech.`
     );
+
+    return {
+      score: Math.max(5, Math.min(42, score)),
+      reasons,
+      classification,
+      primarySector,
+    };
   }
 
-  reasons.unshift(
-    `Maps to ${primary.label} - ${Math.round(primary.portfolioWeight * 100)}% of Motive's venture portfolio (n=${PORTFOLIO_N}).`
+  reasons.push(
+    "Unclassified / weak fintech signal - lower Motive venture sector priority."
   );
 
-  if (/\bai\b|agent|llm|automation/i.test(`${row.sector} ${row.pitch_summary}`)) {
-    score += 6;
-    reasons.push("Verticalized AI theme aligns with Motive's 2024-2026 venture investment pattern.");
-  }
-
   return {
-    score: Math.max(0, Math.min(100, score)),
+    score: 28,
     reasons,
     classification,
-    primarySector: primary,
+    primarySector: null,
   };
 }
 
@@ -694,13 +725,6 @@ function applyMandateFilters(row) {
     });
   }
 
-  if (!sectorClass.isFintech) {
-    failures.push({
-      code: "sector",
-      message: `Sector "${row.sector}" is outside Motive venture fintech focus (${sectorClass.offThesis}).`,
-    });
-  }
-
   return {
     passed: failures.length === 0,
     failures,
@@ -792,7 +816,7 @@ function triageCompanies(rows) {
           `Closest portfolio comp: ${portfolioMatch.name} (${sectorLabel}).`
         );
       }
-      positiveReasons.push(...sectorFit.reasons);
+      positiveReasons.push(...sectorFit.reasons.filter((r) => sectorFit.classification.sectorClass === "core"));
       positiveReasons.push(...geoFit.reasons);
       positiveReasons.push(...ageFit.reasons);
       positiveReasons.push(...checkSize.reasons.filter((r) => !r.includes("not disclosed") && !r.includes("above Motive") && !r.includes("growth")));
@@ -805,6 +829,7 @@ function triageCompanies(rows) {
     }
 
     const cautionReasons = [
+      ...sectorFit.reasons.filter((r) => sectorFit.classification.sectorClass !== "core"),
       ...checkSize.reasons.filter((r) => r.includes("not disclosed") || r.includes("above") || r.includes("growth")),
       ...capitalEff.reasons.filter((r) => r.includes("below typical") || r.includes("Pre-revenue") || r.includes("Insufficient")),
       ...infraMoat.reasons.filter((r) => r.includes("Limited") || r.includes("B2C")),
