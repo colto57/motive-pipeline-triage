@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Motive Partners venture mandate + portfolio-calibrated scoring profile.
  * Venture portfolio analytics derived from motivepartners.com/portfolio (Venture filter).
  * As of June 2026: 41 total Venture entries on site; 38 in similarity corpus (3 realized exits excluded).
@@ -37,11 +37,11 @@ const MOTIVE_MANDATE = {
 
 /**
  * Observed venture portfolio mix (38 companies in similarity corpus, June 2026).
- * Source: motivepartners.com/portfolio Â· Venture strategy filter.
+ * Source: motivepartners.com/portfolio · Venture strategy filter.
  * Total Venture on site = 41 (includes 4 realized); corpus excludes 3 realized (Corastone, Februar, Vitera).
  */
 const MOTIVE_PORTFOLIO_ANALYTICS = {
-  source: "motivepartners.com/portfolio Â· Venture strategy",
+  source: "motivepartners.com/portfolio · Venture strategy",
   sampleSize: 38,
   totalVentureOnSite: 41,
   activeVentureOnSite: 37,
@@ -134,7 +134,7 @@ const MOTIVE_SECTOR_TAXONOMY = [
   },
 ];
 
-/** Adjacent tech sectors â€” kept in pipeline but deprioritized vs core fintech */
+/** Adjacent tech sectors — kept in pipeline but deprioritized vs core fintech */
 const ADJACENT_SECTORS = [
   { pattern: /hr technology|human resources|workforce planning|headcount|compensation benchmarking/i, label: "HR Technology" },
   { pattern: /proptech|commercial real estate buildings|access control|energy management|tenant experience/i, label: "PropTech / CRE operations" },
@@ -151,17 +151,27 @@ const COMPANY_AGE_BY_STAGE = {
 };
 
 const SCORING_WEIGHTS = {
-  thesisSimilarity: 0.17,
-  portfolioSectorFit: 0.19,
-  traction: 0.13,
-  founderSignal: 0.11,
-  geographyAffinity: 0.06,
+  thesisSimilarity: 0.16,
+  portfolioSectorFit: 0.17,
+  traction: 0.08,
+  founderSignal: 0.03,
+  geographyAffinity: 0.05,
   companyAgeFit: 0.06,
-  stageFit: 0.04,
   checkSizeFit: 0.06,
   capitalEfficiency: 0.06,
   infrastructureMoat: 0.06,
-  verticalAiFit: 0.06,
+  verticalAiFit: 0.05,
+  portfolioStageAffinity: 0.05,
+  founderExecutionIndex: 0.08,
+  tractionVelocityIndex: 0.05,
+  portfolioGapScore: 0.04,
+};
+
+/** Monthly ARR velocity benchmarks ($/mo) derived from portfolio stage patterns + venture norms */
+const TRACTION_VELOCITY_BENCHMARKS = {
+  "pre-seed": { p25: 2500, p50: 9000, p75: 22000, label: "Pre-Seed" },
+  seed: { p25: 14000, p50: 28000, p75: 55000, label: "Seed" },
+  "series a": { p25: 45000, p50: 100000, p75: 200000, label: "Series A" },
 };
 
 const MOTIVE_THESIS_STATEMENTS = [
@@ -175,45 +185,101 @@ const MOTIVE_THESIS_STATEMENTS = [
 ];
 
 const MOTIVE_VENTURE_PORTFOLIO = [
-  { name: "Alphastream", subsector: "AI data analytics capital markets workflow automation", location: "New York City NY United States", sectorKey: "ai_data_analytics" },
-  { name: "AMP", subsector: "wealth asset management digital investing", location: "Boulder CO United States", sectorKey: "wealth_asset_management" },
-  { name: "Anchorage Digital", subsector: "capital markets digital assets custody institutional", location: "San Francisco CA United States", sectorKey: "capital_markets" },
-  { name: "Artifact AI", subsector: "AI data analytics financial services automation", location: "New York City NY United States", sectorKey: "ai_data_analytics" },
-  { name: "Asseta AI", subsector: "wealth asset management AI advisor workflows", location: "New York City NY United States", sectorKey: "wealth_asset_management" },
-  { name: "Aufinity Group", subsector: "banking payments europe SME financial services", location: "Cologne Germany", sectorKey: "banking_payments" },
-  { name: "Bunch", subsector: "wealth asset management private markets investing platform", location: "Berlin Germany", sectorKey: "wealth_asset_management" },
-  { name: "Constrafor", subsector: "banking payments construction finance payments", location: "New York City NY United States", sectorKey: "banking_payments" },
-  { name: "Credix", subsector: "banking payments receivables financing europe", location: "Antwerp Belgium", sectorKey: "banking_payments" },
-  { name: "DoorFeed", subsector: "wealth asset management real estate investing platform", location: "London United Kingdom", sectorKey: "wealth_asset_management" },
-  { name: "Finperks", subsector: "banking payments employee benefits financial wellness", location: "Berlin Germany", sectorKey: "banking_payments" },
-  { name: "Flanks", subsector: "wealth asset management portfolio data aggregation", location: "Barcelona Spain", sectorKey: "wealth_asset_management" },
-  { name: "Getquin", subsector: "wealth asset management social investing community", location: "Berlin Germany", sectorKey: "wealth_asset_management" },
-  { name: "Hero", subsector: "banking payments SME neobank europe", location: "Paris France", sectorKey: "banking_payments" },
-  { name: "Korr", subsector: "insurance underwriting automation AI", location: "New York City NY United States", sectorKey: "insurance" },
-  { name: "LawX", subsector: "business services legal workflow automation financial institutions", location: "Berlin Germany", sectorKey: "business_services" },
-  { name: "Luca", subsector: "banking payments SMB accounting payments europe", location: "Berlin Germany", sectorKey: "banking_payments" },
-  { name: "Monnai", subsector: "AI data analytics identity verification fintech onboarding", location: "Los Angeles CA United States", sectorKey: "ai_data_analytics" },
-  { name: "MYNE Homes", subsector: "wealth asset management real estate investing fractional ownership", location: "Berlin Germany", sectorKey: "wealth_asset_management" },
-  { name: "Navro", subsector: "banking payments cross border treasury FX", location: "London United Kingdom", sectorKey: "banking_payments" },
-  { name: "Nelly", subsector: "banking payments healthcare patient financing", location: "Berlin Germany", sectorKey: "banking_payments" },
-  { name: "Novata", subsector: "wealth asset management private markets ESG data", location: "New York City NY United States", sectorKey: "wealth_asset_management" },
-  { name: "Obin AI", subsector: "AI data analytics financial research automation", location: "New York City NY United States", sectorKey: "ai_data_analytics" },
-  { name: "Parto", subsector: "banking payments B2B payments europe", location: "Hamburg Germany", sectorKey: "banking_payments" },
-  { name: "Penzilla", subsector: "insurance embedded insurance distribution", location: "Munich Germany", sectorKey: "insurance" },
-  { name: "Pliant", subsector: "banking payments corporate cards spend management", location: "Berlin Germany", sectorKey: "banking_payments" },
-  { name: "Pluto", subsector: "banking payments payroll earned wage access", location: "New York City NY United States", sectorKey: "banking_payments" },
-  { name: "Steward", subsector: "wealth asset management family office reporting", location: "New York City NY United States", sectorKey: "wealth_asset_management" },
-  { name: "Swapglobal", subsector: "capital markets FX derivatives trading infrastructure", location: "Miami FL United States", sectorKey: "capital_markets" },
-  { name: "Synthera AI", subsector: "AI data analytics financial compliance monitoring", location: "London United Kingdom", sectorKey: "ai_data_analytics" },
-  { name: "Threatfabric", subsector: "AI data analytics fraud detection financial crime", location: "Amsterdam Netherlands", sectorKey: "ai_data_analytics" },
-  { name: "Titanbay", subsector: "wealth asset management alternative investments platform", location: "London United Kingdom", sectorKey: "wealth_asset_management" },
-  { name: "Triver", subsector: "banking payments invoice financing SMB europe", location: "London United Kingdom", sectorKey: "banking_payments" },
-  { name: "Valstro", subsector: "capital markets trading workflow automation", location: "New York City NY United States", sectorKey: "capital_markets" },
-  { name: "Versana", subsector: "capital markets loan syndication data platform", location: "New York City NY United States", sectorKey: "capital_markets" },
-  { name: "Warren", subsector: "wealth asset management portfolio reporting europe", location: "Ghent Belgium", sectorKey: "wealth_asset_management" },
-  { name: "Xaver", subsector: "wealth asset management insurance distribution platform", location: "Cologne Germany", sectorKey: "wealth_asset_management" },
-  { name: "Zocks", subsector: "wealth asset management advisor CRM automation AI", location: "San Francisco CA United States", sectorKey: "wealth_asset_management" },
+  { name: "Alphastream", subsector: "AI data analytics capital markets workflow automation", location: "New York City NY United States", sectorKey: "ai_data_analytics", investmentStage: "series a" },
+  { name: "AMP", subsector: "wealth asset management digital investing", location: "Boulder CO United States", sectorKey: "wealth_asset_management", investmentStage: "series a" },
+  { name: "Anchorage Digital", subsector: "capital markets digital assets custody institutional", location: "San Francisco CA United States", sectorKey: "capital_markets", investmentStage: "series a" },
+  { name: "Artifact AI", subsector: "AI data analytics financial services automation", location: "New York City NY United States", sectorKey: "ai_data_analytics", investmentStage: "pre-seed" },
+  { name: "Asseta AI", subsector: "wealth asset management AI advisor workflows", location: "New York City NY United States", sectorKey: "wealth_asset_management", investmentStage: "pre-seed" },
+  { name: "Aufinity Group", subsector: "banking payments europe SME financial services", location: "Cologne Germany", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Bunch", subsector: "wealth asset management private markets investing platform", location: "Berlin Germany", sectorKey: "wealth_asset_management", investmentStage: "series a" },
+  { name: "Constrafor", subsector: "banking payments construction finance payments", location: "New York City NY United States", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Credix", subsector: "banking payments receivables financing europe", location: "Antwerp Belgium", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "DoorFeed", subsector: "wealth asset management real estate investing platform", location: "London United Kingdom", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Finperks", subsector: "banking payments employee benefits financial wellness", location: "Berlin Germany", sectorKey: "banking_payments", investmentStage: "pre-seed" },
+  { name: "Flanks", subsector: "wealth asset management portfolio data aggregation", location: "Barcelona Spain", sectorKey: "wealth_asset_management", investmentStage: "series a" },
+  { name: "Getquin", subsector: "wealth asset management social investing community", location: "Berlin Germany", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Hero", subsector: "banking payments SME neobank europe", location: "Paris France", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Korr", subsector: "insurance underwriting automation AI", location: "New York City NY United States", sectorKey: "insurance", investmentStage: "pre-seed" },
+  { name: "LawX", subsector: "business services legal workflow automation financial institutions", location: "Berlin Germany", sectorKey: "business_services", investmentStage: "pre-seed" },
+  { name: "Luca", subsector: "banking payments SMB accounting payments europe", location: "Berlin Germany", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Monnai", subsector: "AI data analytics identity verification fintech onboarding", location: "Los Angeles CA United States", sectorKey: "ai_data_analytics", investmentStage: "series a" },
+  { name: "MYNE Homes", subsector: "wealth asset management real estate investing fractional ownership", location: "Berlin Germany", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Navro", subsector: "banking payments cross border treasury FX", location: "London United Kingdom", sectorKey: "banking_payments", investmentStage: "series a" },
+  { name: "Nelly", subsector: "banking payments healthcare patient financing", location: "Berlin Germany", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Novata", subsector: "wealth asset management private markets ESG data", location: "New York City NY United States", sectorKey: "wealth_asset_management", investmentStage: "series a" },
+  { name: "Obin AI", subsector: "AI data analytics financial research automation", location: "New York City NY United States", sectorKey: "ai_data_analytics", investmentStage: "pre-seed" },
+  { name: "Parto", subsector: "banking payments B2B payments europe", location: "Hamburg Germany", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Penzilla", subsector: "insurance embedded insurance distribution", location: "Munich Germany", sectorKey: "insurance", investmentStage: "pre-seed" },
+  { name: "Pliant", subsector: "banking payments corporate cards spend management", location: "Berlin Germany", sectorKey: "banking_payments", investmentStage: "series a" },
+  { name: "Pluto", subsector: "banking payments payroll earned wage access", location: "New York City NY United States", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Steward", subsector: "wealth asset management family office reporting", location: "New York City NY United States", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Swapglobal", subsector: "capital markets FX derivatives trading infrastructure", location: "Miami FL United States", sectorKey: "capital_markets", investmentStage: "series a" },
+  { name: "Synthera AI", subsector: "AI data analytics financial compliance monitoring", location: "London United Kingdom", sectorKey: "ai_data_analytics", investmentStage: "pre-seed" },
+  { name: "Threatfabric", subsector: "AI data analytics fraud detection financial crime", location: "Amsterdam Netherlands", sectorKey: "ai_data_analytics", investmentStage: "series a" },
+  { name: "Titanbay", subsector: "wealth asset management alternative investments platform", location: "London United Kingdom", sectorKey: "wealth_asset_management", investmentStage: "series a" },
+  { name: "Triver", subsector: "banking payments invoice financing SMB europe", location: "London United Kingdom", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Valstro", subsector: "capital markets trading workflow automation", location: "New York City NY United States", sectorKey: "capital_markets", investmentStage: "series a" },
+  { name: "Versana", subsector: "capital markets loan syndication data platform", location: "New York City NY United States", sectorKey: "capital_markets", investmentStage: "series a" },
+  { name: "Warren", subsector: "wealth asset management portfolio reporting europe", location: "Ghent Belgium", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Xaver", subsector: "wealth asset management insurance distribution platform", location: "Cologne Germany", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Zocks", subsector: "wealth asset management advisor CRM automation AI", location: "San Francisco CA United States", sectorKey: "wealth_asset_management", investmentStage: "seed" },
 ];
+
+function parsePortfolioGeography(location) {
+  const text = (location || "").toLowerCase();
+  if (
+    /united states|,\s*us\b|usa|u\.s\./i.test(text) ||
+    /,\s*(al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy)\b/.test(text)
+  ) {
+    return "united_states";
+  }
+  return "europe";
+}
+
+function buildPortfolioAnalytics(portfolio = MOTIVE_VENTURE_PORTFOLIO) {
+  const n = portfolio.length;
+  const stageCounts = { "pre-seed": 0, seed: 0, "series a": 0 };
+  const sectorStage = {};
+  const geoStage = { united_states: { "pre-seed": 0, seed: 0, "series a": 0 }, europe: { "pre-seed": 0, seed: 0, "series a": 0 } };
+
+  for (const company of portfolio) {
+    const stage = company.investmentStage || "seed";
+    stageCounts[stage] = (stageCounts[stage] || 0) + 1;
+
+    if (!sectorStage[company.sectorKey]) {
+      sectorStage[company.sectorKey] = { "pre-seed": 0, seed: 0, "series a": 0, total: 0 };
+    }
+    sectorStage[company.sectorKey][stage] += 1;
+    sectorStage[company.sectorKey].total += 1;
+
+    const geo = parsePortfolioGeography(company.location);
+    geoStage[geo][stage] += 1;
+  }
+
+  const stageMix = {
+    "pre-seed": stageCounts["pre-seed"] / n,
+    seed: stageCounts.seed / n,
+    "series a": stageCounts["series a"] / n,
+  };
+
+  const underweightThreshold = 0.1;
+  const underweightSectors = MOTIVE_SECTOR_TAXONOMY.filter(
+    (s) => s.portfolioWeight < underweightThreshold
+  ).map((s) => s.key);
+
+  return {
+    source: "motivepartners.com/portfolio · Venture strategy",
+    sampleSize: n,
+    stageMix,
+    stageCounts,
+    sectorStageMatrix: sectorStage,
+    geographyStageMatrix: geoStage,
+    underweightSectors,
+    underweightThreshold,
+  };
+}
+
+const MOTIVE_PORTFOLIO_STAGE_ANALYTICS = buildPortfolioAnalytics();
 
 function buildReferenceCorpus() {
   const portfolioDocs = MOTIVE_VENTURE_PORTFOLIO.map(
@@ -266,16 +332,20 @@ function classifyCompanySector(row) {
 window.MotiveReference = {
   MOTIVE_MANDATE,
   MOTIVE_PORTFOLIO_ANALYTICS,
+  MOTIVE_PORTFOLIO_STAGE_ANALYTICS,
   MOTIVE_SECTOR_TAXONOMY,
   ADJACENT_SECTORS,
   NON_FINTECH_SECTORS: ADJACENT_SECTORS,
   COMPANY_AGE_BY_STAGE,
   SCORING_WEIGHTS,
+  TRACTION_VELOCITY_BENCHMARKS,
   MOTIVE_THESIS_STATEMENTS,
   MOTIVE_VENTURE_PORTFOLIO,
   buildReferenceCorpus,
+  buildPortfolioAnalytics,
   classifyCompanySector,
 };
+
 (function () {
   "use strict";
 
@@ -288,8 +358,10 @@ const {
   MOTIVE_VENTURE_PORTFOLIO,
   MOTIVE_SECTOR_TAXONOMY,
   MOTIVE_PORTFOLIO_ANALYTICS,
+  MOTIVE_PORTFOLIO_STAGE_ANALYTICS,
   COMPANY_AGE_BY_STAGE,
   SCORING_WEIGHTS,
+  TRACTION_VELOCITY_BENCHMARKS,
   buildReferenceCorpus,
   classifyCompanySector,
 } = window.MotiveReference || {};
@@ -302,19 +374,32 @@ const VENTURE_PORTFOLIO = MOTIVE_VENTURE_PORTFOLIO || [];
 const SECTOR_TAXONOMY = MOTIVE_SECTOR_TAXONOMY || [];
 const MANDATE_STAGES = MOTIVE_MANDATE?.stages || ["pre-seed", "seed", "series a"];
 const DEFAULT_SCORING_WEIGHTS = {
-  thesisSimilarity: 0.17,
-  portfolioSectorFit: 0.19,
-  traction: 0.13,
-  founderSignal: 0.11,
-  geographyAffinity: 0.06,
+  thesisSimilarity: 0.16,
+  portfolioSectorFit: 0.17,
+  traction: 0.08,
+  founderSignal: 0.03,
+  geographyAffinity: 0.05,
   companyAgeFit: 0.06,
-  stageFit: 0.04,
   checkSizeFit: 0.06,
   capitalEfficiency: 0.06,
   infrastructureMoat: 0.06,
-  verticalAiFit: 0.06,
+  verticalAiFit: 0.05,
+  portfolioStageAffinity: 0.05,
+  founderExecutionIndex: 0.08,
+  tractionVelocityIndex: 0.05,
+  portfolioGapScore: 0.04,
 };
 const WEIGHTS = SCORING_WEIGHTS || DEFAULT_SCORING_WEIGHTS;
+const STAGE_MIX = MOTIVE_PORTFOLIO_STAGE_ANALYTICS?.stageMix || {
+  "pre-seed": 0.21,
+  seed: 0.42,
+  "series a": 0.37,
+};
+const VELOCITY_BENCHMARKS = TRACTION_VELOCITY_BENCHMARKS || {
+  "pre-seed": { p25: 2500, p50: 9000, p75: 22000 },
+  seed: { p25: 14000, p50: 28000, p75: 55000 },
+  "series a": { p25: 45000, p50: 100000, p75: 200000 },
+};
 const DEFAULT_COMPANY_AGE_BY_STAGE = {
   "pre-seed": { idealMin: 0, idealMax: 2, acceptableMax: 3, label: "0-2 years" },
   seed: { idealMin: 1, idealMax: 4, acceptableMax: 6, label: "1-4 years" },
@@ -349,10 +434,25 @@ const STAGE_ORDER = {
 const TIER1_COMPANIES =
   /\b(stripe|jpmorgan|jp morgan|goldman sachs|visa|mastercard|paypal|square|brex|plaid|coinbase|a16z|openai|anthropic|mckinsey|bloomberg|ubs|credit suisse|worldpay|adyen|klarna|salesforce|workday|linkedin|blackstone|yardi|citadel|aws|amazon|nubank|grab|truelayer|harvey ai|kirkland|munich re|ondeck|kabbage|epic|athenahealth|fedex|flexport|prudential|palantir|nutmeg|moneybox|worldpay)\b/i;
 
-const SERIAL_FOUNDER = /\b(serial founder|previously built and sold|sold .+ to|prior exit|second[- ]time founder)\b/i;
+const FINTECH_EMPLOYERS =
+  /\b(goldman sachs|jpmorgan|jp morgan|morgan stanley|stripe|plaid|brex|visa|mastercard|paypal|square|adyen|klarna|nubank|revolut|wise|transferwise|monzo|chime|sofi|robinhood|coinbase|blackrock|fidelity|schwab|bloomberg|refinitiv|factset|moody's|s&p|experian|equifax|transunion|worldpay|fiserv|fis global|fidelity national|jack henry|marqeta|galileo|unit|synapse|truelayer|tink|yapily|mckinsey|bain|bcg|deloitte|kpmg|pwc|ernst|young|wells fargo|citi|citigroup|barclays|hsbc|deutsche bank|ubs|credit suisse|american express|capital one|affirm|lendingclub|ondeck|kabbage|yardi|blackstone|apollo|kkr|carlyle|a16z|sequoia|index ventures|ribbit|qed|nyca|anthemis|salesforce|workday|linkedin)\b/gi;
 
-const SENIOR_TITLES =
-  /\b(ceo|cto|coo|cfo|chief|head of|vp |vice president|director|managing partner|co-founder)\b/i;
+const OPERATOR_TITLES =
+  /\b(ceo|cto|coo|cfo|chief|head of|vp |vice president|director|managing director|partner|co-founder|cofounder|founder)\b/i;
+
+const ADVISOR_TITLES = /\b(advisor|adviser|board member|board director|angel investor|mentor)\b/i;
+
+const EXIT_QUALITY =
+  /\b(sold (?:\w+ )*to ([\w\s&]+)|acquired by ([\w\s&]+)|exit to ([\w\s&]+)|prior exit|second[- ]time founder|serial founder)\b/i;
+
+const TECHNICAL_COFUNDER =
+  /\b(technical co-founder|cto co-founder|engineering co-founder|ex-.+ engineering|head of engineering|vp engineering)\b/i;
+
+const DOMAIN_TENURE =
+  /(\d+)\+?\s*years?\s+(?:at|in|with|building)|(?:former|ex-)\s+head of\s+[\w\s]+|(\d+)\+?\s*years?\s+of\s+[\w\s]+experience/i;
+
+const SERIAL_FOUNDER = EXIT_QUALITY;
+const SENIOR_TITLES = OPERATOR_TITLES;
 
 const FINTECH_DOMAIN =
   /\b(fintech|financial services|banking|payments|wealth|insurance|capital markets|underwriting|compliance|treasury|lending|neobank|open banking|embedded finance|transaction banking|private banking|actuary|insurtech)\b/i;
@@ -474,7 +574,7 @@ function scaleThesisSimilarity(cosineSim) {
 function parseMoney(text) {
   const arrMatch = text.match(/\$([\d.]+)\s*([mbk])\s*arr/i);
   const gmvMatch = text.match(/\$([\d.]+)\s*([mbn])\+?\s*gmv/i);
-  const raiseMatch = text.match(/(?:raising|raise)\s+[Â£â‚¬$]?([\d.]+)\s*([mbk])/i);
+  const raiseMatch = text.match(/(?:raising|raise)\s+[£€$]?([\d.]+)\s*([mbk])/i);
 
   const toNumber = (value, unit) => {
     const mult = { k: 1e3, m: 1e6, b: 1e9, n: 1e9 }[unit.toLowerCase()] || 1;
@@ -772,17 +872,264 @@ function scoreFounders(row) {
 }
 
 function scoreStageFit(stage) {
+  return scorePortfolioStageAffinity(stage);
+}
+
+function scorePortfolioStageAffinity(stage) {
   const normalized = normalizeStage(stage);
-  if (normalized === "seed") {
-    return { score: 95, reasons: ["Seed - most common Motive venture entry point."] };
+  const mix = STAGE_MIX[normalized] || 0;
+  const pct = Math.round(mix * 100);
+  const reasons = [];
+
+  if (!MANDATE_STAGES.includes(normalized)) {
+    return { score: 0, reasons: ["Stage outside venture mandate."] };
   }
-  if (normalized === "series a") {
-    return { score: 88, reasons: ["Series A - upper bound of Motive venture mandate."] };
+
+  const ranked = Object.entries(STAGE_MIX).sort((a, b) => b[1] - a[1]);
+  const topStage = ranked[0]?.[0];
+  let score;
+
+  if (normalized === topStage) {
+    score = 95;
+    reasons.push(
+      `${capitalizeStage(normalized)} stage aligns with ${pct}% of Motive's venture deployments (n=${PORTFOLIO_N} active corpus) — highest portfolio affinity.`
+    );
+  } else if (mix >= 0.3) {
+    score = 82 + Math.round(mix * 30);
+    reasons.push(
+      `${capitalizeStage(normalized)} stage aligns with ${pct}% of Motive's venture deployments (n=${PORTFOLIO_N} active corpus).`
+    );
+  } else if (mix >= 0.15) {
+    score = 68 + Math.round(mix * 40);
+    reasons.push(
+      `${capitalizeStage(normalized)} is ${pct}% of Motive venture entries — in mandate but less frequent than ${capitalizeStage(topStage)} (${Math.round((STAGE_MIX[topStage] || 0) * 100)}%).`
+    );
+  } else {
+    score = 58;
+    reasons.push(
+      `${capitalizeStage(normalized)} is ${pct}% of Motive venture entries — acceptable within mandate but below historical deployment frequency.`
+    );
   }
-  if (normalized === "pre-seed") {
-    return { score: 78, reasons: ["Pre-seed in mandate - typically needs stronger founder/sector fit."] };
+
+  return { score: Math.max(0, Math.min(100, score)), reasons };
+}
+
+function capitalizeStage(stage) {
+  if (stage === "pre-seed") return "Pre-Seed";
+  if (stage === "series a") return "Series A";
+  return stage.charAt(0).toUpperCase() + stage.slice(1);
+}
+
+function parseDomainTenure(text) {
+  let maxYears = 0;
+  const matches = text.matchAll(/(\d+)\+?\s*years?\s+(?:at|in|with|building|of)/gi);
+  for (const m of matches) {
+    maxYears = Math.max(maxYears, parseInt(m[1], 10));
   }
-  return { score: 0, reasons: ["Stage outside venture mandate."] };
+  if (/former\s+head of|ex-head of/i.test(text)) maxYears = Math.max(maxYears, 8);
+  if (/former\s+(ceo|cto|cfo)/i.test(text)) maxYears = Math.max(maxYears, 10);
+  return maxYears;
+}
+
+function scoreFounderExecutionIndex(row) {
+  const text = row.founder_background || "";
+  let score = 32;
+  const reasons = [];
+  const signals = [];
+
+  const tenure = parseDomainTenure(text);
+  if (tenure >= 10) {
+    score += 22;
+    signals.push(`${tenure}+ years domain tenure`);
+  } else if (tenure >= 5) {
+    score += 14;
+    signals.push(`${tenure} years domain experience`);
+  } else if (tenure >= 2) {
+    score += 6;
+    signals.push("some domain tenure");
+  }
+
+  const operatorHits = (text.match(new RegExp(OPERATOR_TITLES.source, "gi")) || []).length;
+  const advisorHits = (text.match(new RegExp(ADVISOR_TITLES.source, "gi")) || []).length;
+  if (operatorHits >= 2) {
+    score += 16;
+    signals.push("multiple operator roles (CEO/CTO/Head of)");
+  } else if (operatorHits === 1) {
+    score += 10;
+    signals.push("senior operator title");
+  }
+  if (advisorHits > 0 && operatorHits === 0) {
+    score -= 12;
+    signals.push("advisor-heavy profile vs. operators");
+  } else if (advisorHits > operatorHits) {
+    score -= 6;
+    signals.push("more advisor than operator signals");
+  }
+
+  const exitMatch = text.match(EXIT_QUALITY);
+  if (exitMatch) {
+    const acquirer = exitMatch[1] || exitMatch[2] || exitMatch[3];
+    if (acquirer && acquirer.length > 2 && !/prior exit|serial founder/i.test(acquirer)) {
+      score += 20;
+      signals.push(`exit to ${acquirer.trim()}`);
+    } else {
+      score += 14;
+      signals.push("serial founder / prior exit");
+    }
+  }
+
+  const fintechEmployers = new Set(
+    (text.match(FINTECH_EMPLOYERS) || []).map((m) => m.toLowerCase())
+  );
+  const fintechDepth = fintechEmployers.size;
+  if (fintechDepth >= 3) {
+    score += 18;
+    signals.push(`${fintechDepth} fintech-specific employers`);
+  } else if (fintechDepth === 2) {
+    score += 12;
+    signals.push(`deep fintech pedigree (${[...fintechEmployers].slice(0, 2).join(", ")})`);
+  } else if (fintechDepth === 1) {
+    score += 7;
+    signals.push(`fintech operator background (${[...fintechEmployers][0]})`);
+  }
+
+  const hasCofounder = /\bco-founder|cofounder\b/i.test(text);
+  const hasTechnical = TECHNICAL_COFUNDER.test(text) || /\b(cto|head of engineering|vp engineering)\b/i.test(text);
+  if (hasCofounder && hasTechnical) {
+    score += 12;
+    signals.push("co-founder + technical leadership");
+  } else if (hasCofounder) {
+    score += 5;
+    signals.push("co-founder team structure");
+  } else if (hasTechnical) {
+    score += 6;
+    signals.push("technical leadership on founding team");
+  }
+
+  if (/first[- ]time founders?/i.test(text)) {
+    score = Math.min(score, 52);
+    reasons.push("First-time founders — execution index capped pending reference checks.");
+  }
+
+  if (signals.length) {
+    reasons.unshift(`Founder Execution Index: ${signals.slice(0, 4).join("; ")}.`);
+  } else {
+    reasons.push("Limited founder execution signals from available text.");
+    score = 35;
+  }
+
+  return { score: Math.max(30, Math.min(95, score)), reasons };
+}
+
+function scoreTractionVelocity(row, stage) {
+  const metrics = parseMoney(row.pitch_summary);
+  const foundingYear = parseInt(row.founding_year, 10);
+  const ageMonths = Number.isNaN(foundingYear)
+    ? null
+    : Math.max(6, ((MOTIVE_MANDATE?.currentYear || 2026) - foundingYear) * 12);
+  const bench = VELOCITY_BENCHMARKS[stage] || VELOCITY_BENCHMARKS.seed;
+  const reasons = [];
+  let score = 40;
+
+  if (metrics.arr == null || ageMonths == null) {
+    if (metrics.gmv != null) {
+      score = 58;
+      reasons.push("GMV-based business — ARR velocity benchmark not directly applicable.");
+    } else if (metrics.designPartners) {
+      score = 52;
+      reasons.push("Institutional pilots — revenue velocity still forming.");
+    } else {
+      score = 38;
+      reasons.push("Insufficient ARR + founding date to compute monthly revenue velocity.");
+    }
+    return { score, reasons, monthlyVelocity: null, metrics };
+  }
+
+  const monthlyVelocity = metrics.arr / ageMonths;
+  const velocityK = Math.round(monthlyVelocity / 1000);
+  const arrLabel =
+    row.pitch_summary.match(/\$[\d.]+\s*[mbk]\s*ARR/i)?.[0] ||
+    `$${(metrics.arr / 1000).toFixed(0)}k ARR`;
+  const ageYrs = Math.round(ageMonths / 12);
+
+  if (monthlyVelocity >= bench.p75) {
+    score = 92;
+    reasons.push(
+      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity — top quartile for ${capitalizeStage(stage)} (p75 ~$${Math.round(bench.p75 / 1000)}k/mo).`
+    );
+  } else if (monthlyVelocity >= bench.p50) {
+    score = 78;
+    reasons.push(
+      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity — above median for ${capitalizeStage(stage)} (p50 ~$${Math.round(bench.p50 / 1000)}k/mo).`
+    );
+  } else if (monthlyVelocity >= bench.p25) {
+    score = 62;
+    reasons.push(
+      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity — between p25–p50 for ${capitalizeStage(stage)}.`
+    );
+  } else if (monthlyVelocity > 0) {
+    score = 45;
+    reasons.push(
+      `${arrLabel} in ${ageYrs} yr${ageYrs === 1 ? "" : "s"} = ~$${velocityK}k/mo velocity — below p25 for ${capitalizeStage(stage)} (~$${Math.round(bench.p25 / 1000)}k/mo).`
+    );
+  }
+
+  if (metrics.growth != null && metrics.growth >= 100) {
+    score = Math.min(95, score + 12);
+    reasons.push(`Growth multiplier: ${metrics.growthLabel || metrics.growth + "%"} — velocity accelerating.`);
+  } else if (metrics.growth != null && metrics.growth >= 50) {
+    score = Math.min(92, score + 7);
+    reasons.push(`Growth multiplier: ${metrics.growthLabel || metrics.growth + "%"} boosts velocity outlook.`);
+  }
+
+  return { score: Math.max(0, Math.min(100, score)), reasons, monthlyVelocity, metrics };
+}
+
+function scorePortfolioGap(row, sectorFit) {
+  const classification = sectorFit.classification;
+  const reasons = [];
+  let score = 50;
+
+  if (classification.sectorClass !== "core") {
+    return {
+      score: 28,
+      reasons: ["Adjacent/off-thesis sector — no white-space bonus for portfolio expansion."],
+    };
+  }
+
+  const primary = sectorFit.primarySector;
+  if (!primary) {
+    return { score: 40, reasons: ["Sector unclassified — cannot assess portfolio gap opportunity."] };
+  }
+
+  const weight = primary.portfolioWeight;
+  const pct = Math.round(weight * 100);
+  const underweightThreshold = MOTIVE_PORTFOLIO_STAGE_ANALYTICS?.underweightThreshold || 0.1;
+  const underweightKeys = MOTIVE_PORTFOLIO_STAGE_ANALYTICS?.underweightSectors || [];
+
+  if (underweightKeys.includes(primary.key)) {
+    score = 88;
+    reasons.push(
+      `${primary.label} is ${pct}% of Motive portfolio (<${Math.round(underweightThreshold * 100)}%) — white-space thesis expansion opportunity with low concentration risk.`
+    );
+  } else if (weight <= 0.12) {
+    score = 72;
+    reasons.push(
+      `${primary.label} is ${pct}% of Motive portfolio — room to add without concentration risk.`
+    );
+  } else if (weight >= 0.3) {
+    score = 55;
+    reasons.push(
+      `${primary.label} is ${pct}% of Motive portfolio — strong fit but dense cluster (limited novelty bonus).`
+    );
+  } else {
+    score = 64;
+    reasons.push(
+      `${primary.label} is ${pct}% of Motive portfolio — balanced sector weight with moderate expansion room.`
+    );
+  }
+
+  return { score: Math.max(0, Math.min(100, score)), reasons };
 }
 
 function scoreCheckSizeFit(row) {
@@ -1035,8 +1382,14 @@ function compareShortlistResults(a, b) {
   const tractionDelta = b.componentScores.traction - a.componentScores.traction;
   if (tractionDelta !== 0) return tractionDelta;
 
-  const founderDelta = b.componentScores.founderSignal - a.componentScores.founderSignal;
+  const founderDelta =
+    (b.componentScores.founderExecutionIndex || b.componentScores.founderSignal) -
+    (a.componentScores.founderExecutionIndex || a.componentScores.founderSignal);
   if (founderDelta !== 0) return founderDelta;
+
+  const velocityDelta =
+    (b.componentScores.tractionVelocityIndex || 0) - (a.componentScores.tractionVelocityIndex || 0);
+  if (velocityDelta !== 0) return velocityDelta;
 
   const thesisDelta = b.componentScores.thesisSimilarity - a.componentScores.thesisSimilarity;
   if (thesisDelta !== 0) return thesisDelta;
@@ -1171,6 +1524,9 @@ function buildHighlightReasons(ctx) {
     sectorFit,
     traction,
     founders,
+    founderExecution,
+    tractionVelocity,
+    portfolioGap,
     verticalAi,
     checkSize,
     mandate,
@@ -1220,11 +1576,11 @@ function buildHighlightReasons(ctx) {
     }
   }
 
-  if (componentScores.founderSignal >= 60) {
+  if (componentScores.founderSignal >= 60 || componentScores.founderExecutionIndex >= 65) {
     const snippet = extractFounderSnippet(row.founder_background);
     if (SERIAL_FOUNDER.test(row.founder_background || "")) {
       candidates.push({
-        priority: componentScores.founderSignal + 6,
+        priority: (componentScores.founderExecutionIndex || componentScores.founderSignal) + 6,
         reason: mkReason(
           pickTemplate(
             [
@@ -1237,17 +1593,33 @@ function buildHighlightReasons(ctx) {
       });
     } else if (TIER1_COMPANIES.test(row.founder_background || "")) {
       candidates.push({
-        priority: componentScores.founderSignal + 4,
+        priority: (componentScores.founderExecutionIndex || componentScores.founderSignal) + 4,
         reason: mkReason(
           `Team draws from ${snippet || "tier-1 fintech operators"} - strong credibility for a first diligence call.`
         ),
       });
-    } else if (componentScores.founderSignal >= 70) {
+    } else if ((componentScores.founderExecutionIndex || componentScores.founderSignal) >= 70) {
       candidates.push({
-        priority: componentScores.founderSignal,
-        reason: mkReason(`Founder background shows senior financial-services operator experience.`),
+        priority: componentScores.founderExecutionIndex || componentScores.founderSignal,
+        reason: mkReason(
+          founderExecution?.reasons?.[0] || `Founder background shows senior financial-services operator experience.`
+        ),
       });
     }
+  }
+
+  if (componentScores.tractionVelocityIndex >= 70 && tractionVelocity?.monthlyVelocity) {
+    candidates.push({
+      priority: componentScores.tractionVelocityIndex + 3,
+      reason: mkReason(tractionVelocity.reasons[0] || "Strong revenue velocity vs. stage benchmarks."),
+    });
+  }
+
+  if (componentScores.portfolioGapScore >= 75 && portfolioGap?.reasons?.[0]) {
+    candidates.push({
+      priority: componentScores.portfolioGapScore,
+      reason: mkReason(portfolioGap.reasons[0], "portfolio"),
+    });
   }
 
   if (sectorFit.classification.sectorClass === "core" && componentScores.portfolioSectorFit >= 55) {
@@ -1505,26 +1877,32 @@ function triageCompanies(rows) {
     const sectorFit = scorePortfolioSectorFit(row);
     const traction = scoreTraction(row);
     const founders = scoreFounders(row);
-    const stageFit = scoreStageFit(mandate.stage);
+    const founderExecution = scoreFounderExecutionIndex(row);
+    const stageAffinity = scorePortfolioStageAffinity(mandate.stage);
     const geoFit = scoreGeographyAffinity(mandate.geo, row.hq_geography);
     const ageFit = scoreCompanyAge(row, mandate.stage);
     const checkSize = scoreCheckSizeFit(row);
     const capitalEff = scoreCapitalEfficiency(row, mandate.stage);
     const infraMoat = scoreInfrastructureMoat(row);
     const verticalAi = scoreVerticalAiFit(row);
+    const tractionVelocity = scoreTractionVelocity(row, mandate.stage);
+    const portfolioGap = scorePortfolioGap(row, sectorFit);
 
     const componentScores = {
       thesisSimilarity: thesisScore,
       portfolioSectorFit: sectorFit.score,
       traction: traction.score,
       founderSignal: founders.score,
+      founderExecutionIndex: founderExecution.score,
       geographyAffinity: geoFit.score,
       companyAgeFit: ageFit.score,
-      stageFit: stageFit.score,
+      portfolioStageAffinity: stageAffinity.score,
       checkSizeFit: checkSize.score,
       capitalEfficiency: capitalEff.score,
       infrastructureMoat: infraMoat.score,
       verticalAiFit: verticalAi.score,
+      tractionVelocityIndex: tractionVelocity.score,
+      portfolioGapScore: portfolioGap.score,
     };
 
     const tractionMetrics = traction.metrics || checkSize.metrics || parseMoney(row.pitch_summary);
@@ -1534,13 +1912,16 @@ function triageCompanies(rows) {
         sectorFit.score * weights.portfolioSectorFit +
         traction.score * weights.traction +
         founders.score * weights.founderSignal +
+        founderExecution.score * weights.founderExecutionIndex +
         geoFit.score * weights.geographyAffinity +
         ageFit.score * weights.companyAgeFit +
-        stageFit.score * weights.stageFit +
+        stageAffinity.score * weights.portfolioStageAffinity +
         checkSize.score * weights.checkSizeFit +
         capitalEff.score * weights.capitalEfficiency +
         infraMoat.score * weights.infrastructureMoat +
         verticalAi.score * weights.verticalAiFit +
+        tractionVelocity.score * weights.tractionVelocityIndex +
+        portfolioGap.score * weights.portfolioGapScore +
         computeTiebreakerBonus(row, mandate, tractionMetrics, portfolioMatch)
       : 0;
 
@@ -1556,6 +1937,9 @@ function triageCompanies(rows) {
       sectorFit,
       traction,
       founders,
+      founderExecution,
+      tractionVelocity,
+      portfolioGap,
       verticalAi,
       checkSize,
       capitalEff,

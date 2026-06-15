@@ -77,14 +77,61 @@
       portfolioSectorFit: "Portfolio sector fit",
       traction: "Traction",
       founderSignal: "Founder signal",
+      founderExecutionIndex: "Founder execution",
       geographyAffinity: "Geography fit",
       companyAgeFit: "Company age fit",
-      stageFit: "Stage fit",
+      portfolioStageAffinity: "Stage affinity",
       checkSizeFit: "Check size fit",
       capitalEfficiency: "Capital efficiency",
       infrastructureMoat: "Infrastructure moat",
       verticalAiFit: "Vertical AI fit",
+      tractionVelocityIndex: "Traction velocity",
+      portfolioGapScore: "Portfolio gap",
     };
+
+    const COMPONENT_TOOLTIPS = {
+      founderExecutionIndex:
+        "Domain tenure, operator vs. advisor roles, exit quality, fintech employer depth, and team completeness.",
+      tractionVelocityIndex:
+        "Monthly ARR velocity (ARR ÷ months since founding) vs. stage p25/p50/p75 benchmarks from portfolio analytics.",
+      portfolioStageAffinity:
+        "How well inbound stage matches Motive's historical deployment mix (n=38 venture corpus).",
+      portfolioGapScore:
+        "White-space bonus for on-thesis sectors where Motive is underweight (<10% of portfolio).",
+    };
+
+    const HIGHLIGHT_COMPONENTS = new Set([
+      "founderExecutionIndex",
+      "tractionVelocityIndex",
+      "portfolioStageAffinity",
+      "portfolioGapScore",
+    ]);
+
+    renderPortfolioInsights();
+
+    function renderPortfolioInsights() {
+      const stageBar = document.getElementById("stageMixBar");
+      const analytics = window.MotiveReference?.MOTIVE_PORTFOLIO_STAGE_ANALYTICS;
+      if (!analytics?.stageMix) return;
+
+      const mix = analytics.stageMix;
+      const pre = Math.round(mix["pre-seed"] * 100);
+      const seed = Math.round(mix.seed * 100);
+      const seriesA = Math.round(mix["series a"] * 100);
+
+      if (stageBar) {
+        stageBar.innerHTML = `
+          <div class="stage-mix-segment pre-seed" style="width:${pre}%" title="Pre-Seed ${pre}%"></div>
+          <div class="stage-mix-segment seed" style="width:${seed}%" title="Seed ${seed}%"></div>
+          <div class="stage-mix-segment series-a" style="width:${seriesA}%" title="Series A ${seriesA}%"></div>
+        `;
+      }
+
+      const labels = document.getElementById("stageMixLabels");
+      if (labels) {
+        labels.textContent = `Pre-Seed ${pre}% · Seed ${seed}% · Series A ${seriesA}%`;
+      }
+    }
 
     function requireEngine() {
       if (engineReady && analyzeCsv && triageCompanies) return true;
@@ -322,8 +369,13 @@
 
       const bars = node.querySelector(".score-bars");
       if (!filtered) {
-        for (const [key, value] of Object.entries(company.componentScores)) {
-          bars.appendChild(buildBar(COMPONENT_LABELS[key] || key, value));
+        const sorted = Object.entries(company.componentScores).sort((a, b) => {
+          const aHi = HIGHLIGHT_COMPONENTS.has(a[0]) ? 1 : 0;
+          const bHi = HIGHLIGHT_COMPONENTS.has(b[0]) ? 1 : 0;
+          return bHi - aHi || b[1] - a[1];
+        });
+        for (const [key, value] of sorted) {
+          bars.appendChild(buildBar(COMPONENT_LABELS[key] || key, value, key));
         }
       } else {
         bars.remove();
@@ -354,11 +406,12 @@
       return node;
     }
 
-    function buildBar(label, value) {
+    function buildBar(label, value, key) {
       const row = document.createElement("div");
-      row.className = "bar-row";
+      row.className = "bar-row" + (HIGHLIGHT_COMPONENTS.has(key) ? " bar-row-highlight" : "");
+      const tooltip = COMPONENT_TOOLTIPS[key] ? ` title="${escapeHtml(COMPONENT_TOOLTIPS[key])}"` : "";
       row.innerHTML = `
-        <span class="bar-label">${label}</span>
+        <span class="bar-label"${tooltip}>${label}</span>
         <div class="bar-track"><div class="bar-fill" style="width:${value}%"></div></div>
         <span class="bar-value">${value}</span>
       `;
@@ -379,13 +432,16 @@
         "portfolio_sector_fit",
         "traction",
         "founder_signal",
+        "founder_execution_index",
         "geography_affinity",
         "company_age_fit",
-        "stage_fit",
+        "portfolio_stage_affinity",
         "check_size_fit",
         "capital_efficiency",
         "infrastructure_moat",
         "vertical_ai_fit",
+        "traction_velocity_index",
+        "portfolio_gap_score",
         "primary_sector",
         "top_reasons",
         "filter_reasons",
@@ -412,13 +468,16 @@
             row.componentScores.portfolioSectorFit,
             row.componentScores.traction,
             row.componentScores.founderSignal,
+            row.componentScores.founderExecutionIndex,
             row.componentScores.geographyAffinity,
             row.componentScores.companyAgeFit,
-            row.componentScores.stageFit,
+            row.componentScores.portfolioStageAffinity,
             row.componentScores.checkSizeFit,
             row.componentScores.capitalEfficiency,
             row.componentScores.infrastructureMoat,
             row.componentScores.verticalAiFit,
+            row.componentScores.tractionVelocityIndex,
+            row.componentScores.portfolioGapScore,
             csvCell(row.primarySector || ""),
             csvCell(
               row.positiveReasons
@@ -432,6 +491,7 @@
       });
 
       results.filteredOut.forEach((row) => {
+        const emptyScores = Array(14).fill("");
         lines.push(
           [
             "",
@@ -442,17 +502,7 @@
             csvCell(row.sector),
             csvCell(row.hq_geography),
             csvCell(row.founding_year),
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
+            ...emptyScores,
             csvCell(""),
             csvCell(""),
             csvCell(row.filterReasons.join(" | ")),

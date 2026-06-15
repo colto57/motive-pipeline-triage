@@ -151,17 +151,27 @@ const COMPANY_AGE_BY_STAGE = {
 };
 
 const SCORING_WEIGHTS = {
-  thesisSimilarity: 0.17,
-  portfolioSectorFit: 0.19,
-  traction: 0.13,
-  founderSignal: 0.11,
-  geographyAffinity: 0.06,
+  thesisSimilarity: 0.16,
+  portfolioSectorFit: 0.17,
+  traction: 0.08,
+  founderSignal: 0.03,
+  geographyAffinity: 0.05,
   companyAgeFit: 0.06,
-  stageFit: 0.04,
   checkSizeFit: 0.06,
   capitalEfficiency: 0.06,
   infrastructureMoat: 0.06,
-  verticalAiFit: 0.06,
+  verticalAiFit: 0.05,
+  portfolioStageAffinity: 0.05,
+  founderExecutionIndex: 0.08,
+  tractionVelocityIndex: 0.05,
+  portfolioGapScore: 0.04,
+};
+
+/** Monthly ARR velocity benchmarks ($/mo) derived from portfolio stage patterns + venture norms */
+const TRACTION_VELOCITY_BENCHMARKS = {
+  "pre-seed": { p25: 2500, p50: 9000, p75: 22000, label: "Pre-Seed" },
+  seed: { p25: 14000, p50: 28000, p75: 55000, label: "Seed" },
+  "series a": { p25: 45000, p50: 100000, p75: 200000, label: "Series A" },
 };
 
 const MOTIVE_THESIS_STATEMENTS = [
@@ -175,45 +185,101 @@ const MOTIVE_THESIS_STATEMENTS = [
 ];
 
 const MOTIVE_VENTURE_PORTFOLIO = [
-  { name: "Alphastream", subsector: "AI data analytics capital markets workflow automation", location: "New York City NY United States", sectorKey: "ai_data_analytics" },
-  { name: "AMP", subsector: "wealth asset management digital investing", location: "Boulder CO United States", sectorKey: "wealth_asset_management" },
-  { name: "Anchorage Digital", subsector: "capital markets digital assets custody institutional", location: "San Francisco CA United States", sectorKey: "capital_markets" },
-  { name: "Artifact AI", subsector: "AI data analytics financial services automation", location: "New York City NY United States", sectorKey: "ai_data_analytics" },
-  { name: "Asseta AI", subsector: "wealth asset management AI advisor workflows", location: "New York City NY United States", sectorKey: "wealth_asset_management" },
-  { name: "Aufinity Group", subsector: "banking payments europe SME financial services", location: "Cologne Germany", sectorKey: "banking_payments" },
-  { name: "Bunch", subsector: "wealth asset management private markets investing platform", location: "Berlin Germany", sectorKey: "wealth_asset_management" },
-  { name: "Constrafor", subsector: "banking payments construction finance payments", location: "New York City NY United States", sectorKey: "banking_payments" },
-  { name: "Credix", subsector: "banking payments receivables financing europe", location: "Antwerp Belgium", sectorKey: "banking_payments" },
-  { name: "DoorFeed", subsector: "wealth asset management real estate investing platform", location: "London United Kingdom", sectorKey: "wealth_asset_management" },
-  { name: "Finperks", subsector: "banking payments employee benefits financial wellness", location: "Berlin Germany", sectorKey: "banking_payments" },
-  { name: "Flanks", subsector: "wealth asset management portfolio data aggregation", location: "Barcelona Spain", sectorKey: "wealth_asset_management" },
-  { name: "Getquin", subsector: "wealth asset management social investing community", location: "Berlin Germany", sectorKey: "wealth_asset_management" },
-  { name: "Hero", subsector: "banking payments SME neobank europe", location: "Paris France", sectorKey: "banking_payments" },
-  { name: "Korr", subsector: "insurance underwriting automation AI", location: "New York City NY United States", sectorKey: "insurance" },
-  { name: "LawX", subsector: "business services legal workflow automation financial institutions", location: "Berlin Germany", sectorKey: "business_services" },
-  { name: "Luca", subsector: "banking payments SMB accounting payments europe", location: "Berlin Germany", sectorKey: "banking_payments" },
-  { name: "Monnai", subsector: "AI data analytics identity verification fintech onboarding", location: "Los Angeles CA United States", sectorKey: "ai_data_analytics" },
-  { name: "MYNE Homes", subsector: "wealth asset management real estate investing fractional ownership", location: "Berlin Germany", sectorKey: "wealth_asset_management" },
-  { name: "Navro", subsector: "banking payments cross border treasury FX", location: "London United Kingdom", sectorKey: "banking_payments" },
-  { name: "Nelly", subsector: "banking payments healthcare patient financing", location: "Berlin Germany", sectorKey: "banking_payments" },
-  { name: "Novata", subsector: "wealth asset management private markets ESG data", location: "New York City NY United States", sectorKey: "wealth_asset_management" },
-  { name: "Obin AI", subsector: "AI data analytics financial research automation", location: "New York City NY United States", sectorKey: "ai_data_analytics" },
-  { name: "Parto", subsector: "banking payments B2B payments europe", location: "Hamburg Germany", sectorKey: "banking_payments" },
-  { name: "Penzilla", subsector: "insurance embedded insurance distribution", location: "Munich Germany", sectorKey: "insurance" },
-  { name: "Pliant", subsector: "banking payments corporate cards spend management", location: "Berlin Germany", sectorKey: "banking_payments" },
-  { name: "Pluto", subsector: "banking payments payroll earned wage access", location: "New York City NY United States", sectorKey: "banking_payments" },
-  { name: "Steward", subsector: "wealth asset management family office reporting", location: "New York City NY United States", sectorKey: "wealth_asset_management" },
-  { name: "Swapglobal", subsector: "capital markets FX derivatives trading infrastructure", location: "Miami FL United States", sectorKey: "capital_markets" },
-  { name: "Synthera AI", subsector: "AI data analytics financial compliance monitoring", location: "London United Kingdom", sectorKey: "ai_data_analytics" },
-  { name: "Threatfabric", subsector: "AI data analytics fraud detection financial crime", location: "Amsterdam Netherlands", sectorKey: "ai_data_analytics" },
-  { name: "Titanbay", subsector: "wealth asset management alternative investments platform", location: "London United Kingdom", sectorKey: "wealth_asset_management" },
-  { name: "Triver", subsector: "banking payments invoice financing SMB europe", location: "London United Kingdom", sectorKey: "banking_payments" },
-  { name: "Valstro", subsector: "capital markets trading workflow automation", location: "New York City NY United States", sectorKey: "capital_markets" },
-  { name: "Versana", subsector: "capital markets loan syndication data platform", location: "New York City NY United States", sectorKey: "capital_markets" },
-  { name: "Warren", subsector: "wealth asset management portfolio reporting europe", location: "Ghent Belgium", sectorKey: "wealth_asset_management" },
-  { name: "Xaver", subsector: "wealth asset management insurance distribution platform", location: "Cologne Germany", sectorKey: "wealth_asset_management" },
-  { name: "Zocks", subsector: "wealth asset management advisor CRM automation AI", location: "San Francisco CA United States", sectorKey: "wealth_asset_management" },
+  { name: "Alphastream", subsector: "AI data analytics capital markets workflow automation", location: "New York City NY United States", sectorKey: "ai_data_analytics", investmentStage: "series a" },
+  { name: "AMP", subsector: "wealth asset management digital investing", location: "Boulder CO United States", sectorKey: "wealth_asset_management", investmentStage: "series a" },
+  { name: "Anchorage Digital", subsector: "capital markets digital assets custody institutional", location: "San Francisco CA United States", sectorKey: "capital_markets", investmentStage: "series a" },
+  { name: "Artifact AI", subsector: "AI data analytics financial services automation", location: "New York City NY United States", sectorKey: "ai_data_analytics", investmentStage: "pre-seed" },
+  { name: "Asseta AI", subsector: "wealth asset management AI advisor workflows", location: "New York City NY United States", sectorKey: "wealth_asset_management", investmentStage: "pre-seed" },
+  { name: "Aufinity Group", subsector: "banking payments europe SME financial services", location: "Cologne Germany", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Bunch", subsector: "wealth asset management private markets investing platform", location: "Berlin Germany", sectorKey: "wealth_asset_management", investmentStage: "series a" },
+  { name: "Constrafor", subsector: "banking payments construction finance payments", location: "New York City NY United States", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Credix", subsector: "banking payments receivables financing europe", location: "Antwerp Belgium", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "DoorFeed", subsector: "wealth asset management real estate investing platform", location: "London United Kingdom", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Finperks", subsector: "banking payments employee benefits financial wellness", location: "Berlin Germany", sectorKey: "banking_payments", investmentStage: "pre-seed" },
+  { name: "Flanks", subsector: "wealth asset management portfolio data aggregation", location: "Barcelona Spain", sectorKey: "wealth_asset_management", investmentStage: "series a" },
+  { name: "Getquin", subsector: "wealth asset management social investing community", location: "Berlin Germany", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Hero", subsector: "banking payments SME neobank europe", location: "Paris France", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Korr", subsector: "insurance underwriting automation AI", location: "New York City NY United States", sectorKey: "insurance", investmentStage: "pre-seed" },
+  { name: "LawX", subsector: "business services legal workflow automation financial institutions", location: "Berlin Germany", sectorKey: "business_services", investmentStage: "pre-seed" },
+  { name: "Luca", subsector: "banking payments SMB accounting payments europe", location: "Berlin Germany", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Monnai", subsector: "AI data analytics identity verification fintech onboarding", location: "Los Angeles CA United States", sectorKey: "ai_data_analytics", investmentStage: "series a" },
+  { name: "MYNE Homes", subsector: "wealth asset management real estate investing fractional ownership", location: "Berlin Germany", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Navro", subsector: "banking payments cross border treasury FX", location: "London United Kingdom", sectorKey: "banking_payments", investmentStage: "series a" },
+  { name: "Nelly", subsector: "banking payments healthcare patient financing", location: "Berlin Germany", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Novata", subsector: "wealth asset management private markets ESG data", location: "New York City NY United States", sectorKey: "wealth_asset_management", investmentStage: "series a" },
+  { name: "Obin AI", subsector: "AI data analytics financial research automation", location: "New York City NY United States", sectorKey: "ai_data_analytics", investmentStage: "pre-seed" },
+  { name: "Parto", subsector: "banking payments B2B payments europe", location: "Hamburg Germany", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Penzilla", subsector: "insurance embedded insurance distribution", location: "Munich Germany", sectorKey: "insurance", investmentStage: "pre-seed" },
+  { name: "Pliant", subsector: "banking payments corporate cards spend management", location: "Berlin Germany", sectorKey: "banking_payments", investmentStage: "series a" },
+  { name: "Pluto", subsector: "banking payments payroll earned wage access", location: "New York City NY United States", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Steward", subsector: "wealth asset management family office reporting", location: "New York City NY United States", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Swapglobal", subsector: "capital markets FX derivatives trading infrastructure", location: "Miami FL United States", sectorKey: "capital_markets", investmentStage: "series a" },
+  { name: "Synthera AI", subsector: "AI data analytics financial compliance monitoring", location: "London United Kingdom", sectorKey: "ai_data_analytics", investmentStage: "pre-seed" },
+  { name: "Threatfabric", subsector: "AI data analytics fraud detection financial crime", location: "Amsterdam Netherlands", sectorKey: "ai_data_analytics", investmentStage: "series a" },
+  { name: "Titanbay", subsector: "wealth asset management alternative investments platform", location: "London United Kingdom", sectorKey: "wealth_asset_management", investmentStage: "series a" },
+  { name: "Triver", subsector: "banking payments invoice financing SMB europe", location: "London United Kingdom", sectorKey: "banking_payments", investmentStage: "seed" },
+  { name: "Valstro", subsector: "capital markets trading workflow automation", location: "New York City NY United States", sectorKey: "capital_markets", investmentStage: "series a" },
+  { name: "Versana", subsector: "capital markets loan syndication data platform", location: "New York City NY United States", sectorKey: "capital_markets", investmentStage: "series a" },
+  { name: "Warren", subsector: "wealth asset management portfolio reporting europe", location: "Ghent Belgium", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Xaver", subsector: "wealth asset management insurance distribution platform", location: "Cologne Germany", sectorKey: "wealth_asset_management", investmentStage: "seed" },
+  { name: "Zocks", subsector: "wealth asset management advisor CRM automation AI", location: "San Francisco CA United States", sectorKey: "wealth_asset_management", investmentStage: "seed" },
 ];
+
+function parsePortfolioGeography(location) {
+  const text = (location || "").toLowerCase();
+  if (
+    /united states|,\s*us\b|usa|u\.s\./i.test(text) ||
+    /,\s*(al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy)\b/.test(text)
+  ) {
+    return "united_states";
+  }
+  return "europe";
+}
+
+function buildPortfolioAnalytics(portfolio = MOTIVE_VENTURE_PORTFOLIO) {
+  const n = portfolio.length;
+  const stageCounts = { "pre-seed": 0, seed: 0, "series a": 0 };
+  const sectorStage = {};
+  const geoStage = { united_states: { "pre-seed": 0, seed: 0, "series a": 0 }, europe: { "pre-seed": 0, seed: 0, "series a": 0 } };
+
+  for (const company of portfolio) {
+    const stage = company.investmentStage || "seed";
+    stageCounts[stage] = (stageCounts[stage] || 0) + 1;
+
+    if (!sectorStage[company.sectorKey]) {
+      sectorStage[company.sectorKey] = { "pre-seed": 0, seed: 0, "series a": 0, total: 0 };
+    }
+    sectorStage[company.sectorKey][stage] += 1;
+    sectorStage[company.sectorKey].total += 1;
+
+    const geo = parsePortfolioGeography(company.location);
+    geoStage[geo][stage] += 1;
+  }
+
+  const stageMix = {
+    "pre-seed": stageCounts["pre-seed"] / n,
+    seed: stageCounts.seed / n,
+    "series a": stageCounts["series a"] / n,
+  };
+
+  const underweightThreshold = 0.1;
+  const underweightSectors = MOTIVE_SECTOR_TAXONOMY.filter(
+    (s) => s.portfolioWeight < underweightThreshold
+  ).map((s) => s.key);
+
+  return {
+    source: "motivepartners.com/portfolio · Venture strategy",
+    sampleSize: n,
+    stageMix,
+    stageCounts,
+    sectorStageMatrix: sectorStage,
+    geographyStageMatrix: geoStage,
+    underweightSectors,
+    underweightThreshold,
+  };
+}
+
+const MOTIVE_PORTFOLIO_STAGE_ANALYTICS = buildPortfolioAnalytics();
 
 function buildReferenceCorpus() {
   const portfolioDocs = MOTIVE_VENTURE_PORTFOLIO.map(
@@ -266,13 +332,16 @@ function classifyCompanySector(row) {
 window.MotiveReference = {
   MOTIVE_MANDATE,
   MOTIVE_PORTFOLIO_ANALYTICS,
+  MOTIVE_PORTFOLIO_STAGE_ANALYTICS,
   MOTIVE_SECTOR_TAXONOMY,
   ADJACENT_SECTORS,
   NON_FINTECH_SECTORS: ADJACENT_SECTORS,
   COMPANY_AGE_BY_STAGE,
   SCORING_WEIGHTS,
+  TRACTION_VELOCITY_BENCHMARKS,
   MOTIVE_THESIS_STATEMENTS,
   MOTIVE_VENTURE_PORTFOLIO,
   buildReferenceCorpus,
+  buildPortfolioAnalytics,
   classifyCompanySector,
 };

@@ -76,7 +76,7 @@ Adjacent tech sectors — HR Tech, PropTech/CRE ops, logistics, pure healthcare 
 
 
 
-### Ranking signals (post-filter) — 11 components, weights sum to 100%
+### Ranking signals (post-filter) — 14 components, weights sum to 100%
 
 
 
@@ -84,13 +84,13 @@ Adjacent tech sectors — HR Tech, PropTech/CRE ops, logistics, pure healthcare 
 
 |--------|--------|---------------------------|
 
-| Portfolio sector fit | 19% | Direct mirror of where Motive actually deploys venture capital |
+| Portfolio sector fit | 17% | Direct mirror of where Motive actually deploys venture capital |
 
-| Thesis similarity | 17% | Semantic match to thesis + 38 portfolio comps |
+| Thesis similarity | 16% | Semantic match to thesis + 38 portfolio comps |
 
-| Traction | 13% | ARR, GMV, growth, customers, design partners |
+| Traction | 8% | ARR, GMV, growth, customers, design partners |
 
-| Founder signal | 11% | Serial exits, tier-1 fintech operators |
+| **Founder Execution Index** | **8%** | Domain tenure, operator vs. advisor, exit quality, fintech depth |
 
 | **Check size fit** | **6%** | Motive leads $1–10M; misaligned raises waste partner time |
 
@@ -128,6 +128,9 @@ Adjacent tech sectors — HR Tech, PropTech/CRE ops, logistics, pure healthcare 
 
 
 
+
+
+5. **Portfolio-calibrated extensions (June 2026)** � **Portfolio Stage Affinity** (5%), **Founder Execution Index** (8%), **Traction Velocity Index** (5%), and **Portfolio Gap Score** (4%) rebalance weights to 100% using n=38 venture corpus stage mix (Seed 42%, Series A 37%, Pre-Seed 21%).
 ## (b) Scoring / filtering structure
 
 
@@ -136,7 +139,7 @@ Adjacent tech sectors — HR Tech, PropTech/CRE ops, logistics, pure healthcare 
 
 
 
-**Layer 2 — Weighted score (0–100):** Eleven components above.
+**Layer 2 — Weighted score (0–100):** Fourteen components above.
 
 
 
