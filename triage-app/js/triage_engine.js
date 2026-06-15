@@ -19,6 +19,32 @@ const PORTFOLIO_N =
   38;
 const VENTURE_PORTFOLIO = MOTIVE_VENTURE_PORTFOLIO || [];
 const SECTOR_TAXONOMY = MOTIVE_SECTOR_TAXONOMY || [];
+const MANDATE_STAGES = MOTIVE_MANDATE?.stages || ["pre-seed", "seed", "series a"];
+const DEFAULT_SCORING_WEIGHTS = {
+  thesisSimilarity: 0.17,
+  portfolioSectorFit: 0.19,
+  traction: 0.13,
+  founderSignal: 0.11,
+  geographyAffinity: 0.06,
+  companyAgeFit: 0.06,
+  stageFit: 0.04,
+  checkSizeFit: 0.06,
+  capitalEfficiency: 0.06,
+  infrastructureMoat: 0.06,
+  verticalAiFit: 0.06,
+};
+const WEIGHTS = SCORING_WEIGHTS || DEFAULT_SCORING_WEIGHTS;
+const DEFAULT_COMPANY_AGE_BY_STAGE = {
+  "pre-seed": { idealMin: 0, idealMax: 2, acceptableMax: 3, label: "0–2 years" },
+  seed: { idealMin: 1, idealMax: 4, acceptableMax: 6, label: "1–4 years" },
+  "series a": { idealMin: 2, idealMax: 5, acceptableMax: 7, label: "2–5 years" },
+};
+const AGE_BY_STAGE = COMPANY_AGE_BY_STAGE || DEFAULT_COMPANY_AGE_BY_STAGE;
+function defaultClassifyCompanySector() {
+  return { isFintech: true, offThesis: null, matches: [] };
+}
+const classifySector =
+  typeof classifyCompanySector === "function" ? classifyCompanySector : defaultClassifyCompanySector;
 const US_SHARE = Math.round((MOTIVE_PORTFOLIO_ANALYTICS?.geographyMix?.united_states || 0.42) * 100);
 const EU_SHARE = Math.round((MOTIVE_PORTFOLIO_ANALYTICS?.geographyMix?.europe || 0.58) * 100);
 
@@ -166,7 +192,7 @@ function parseMoney(text) {
 }
 
 function scorePortfolioSectorFit(row) {
-  const classification = classifyCompanySector(row);
+  const classification = classifySector(row);
   const reasons = [];
 
   if (!classification.isFintech) {
@@ -236,7 +262,7 @@ function scoreGeographyAffinity(geo, hq) {
 function scoreCompanyAge(row, stage) {
   const foundingYear = parseInt(row.founding_year, 10);
   const age = (MOTIVE_MANDATE?.currentYear || 2026) - foundingYear;
-  const profile = COMPANY_AGE_BY_STAGE[stage] || COMPANY_AGE_BY_STAGE.seed;
+  const profile = AGE_BY_STAGE[stage] || AGE_BY_STAGE.seed;
   const reasons = [];
 
   if (Number.isNaN(foundingYear)) {
@@ -580,10 +606,10 @@ function findBestPortfolioMatch(companyVec, idf) {
 function applyMandateFilters(row) {
   const stage = normalizeStage(row.stage);
   const geo = parseGeography(row.hq_geography);
-  const sectorClass = classifyCompanySector(row);
+  const sectorClass = classifySector(row);
   const failures = [];
 
-  if (!(MOTIVE_MANDATE?.stages || []).includes(stage)) {
+  if (!MANDATE_STAGES.includes(stage)) {
     failures.push({
       code: "stage",
       message: `Stage "${row.stage}" is outside Motive venture mandate (Pre-Seed – Series A). Route to growth/buyout team.`,
@@ -626,7 +652,7 @@ function triageCompanies(rows) {
     }
   }
 
-  const weights = SCORING_WEIGHTS;
+  const weights = WEIGHTS;
 
   const results = rows.map((row) => {
     const mandate = applyMandateFilters(row);
