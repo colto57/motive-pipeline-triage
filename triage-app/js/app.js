@@ -460,7 +460,7 @@
         .replaceAll('"', "&quot;");
     }
 
-    if (window.SAMPLE_INBOUND_CSV) {
+    if (engineReady && window.SAMPLE_INBOUND_CSV) {
       runTriage(window.SAMPLE_INBOUND_CSV, "Loaded sample pipeline (25 companies).");
     }
   }
