@@ -1,3 +1,6 @@
+(function () {
+  "use strict";
+
 if (!window.MotiveReference) {
   console.error("motive_reference.js did not load before triage_engine.js");
 }
@@ -1011,3 +1014,4 @@ window.TriageEngine = {
   CSV_FIELD_DEFINITIONS,
   CSV_REQUIRED_FIELDS,
 };
+})();
