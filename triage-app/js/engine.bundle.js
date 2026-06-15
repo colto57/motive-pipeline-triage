@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Motive Partners venture mandate + portfolio-calibrated scoring profile.
  * Venture portfolio analytics derived from motivepartners.com/portfolio (Venture filter).
  * As of June 2026: 41 total Venture entries on site; 38 in similarity corpus (3 realized exits excluded).
@@ -37,11 +37,11 @@ const MOTIVE_MANDATE = {
 
 /**
  * Observed venture portfolio mix (38 companies in similarity corpus, June 2026).
- * Source: motivepartners.com/portfolio · Venture strategy filter.
+ * Source: motivepartners.com/portfolio Â· Venture strategy filter.
  * Total Venture on site = 41 (includes 4 realized); corpus excludes 3 realized (Corastone, Februar, Vitera).
  */
 const MOTIVE_PORTFOLIO_ANALYTICS = {
-  source: "motivepartners.com/portfolio · Venture strategy",
+  source: "motivepartners.com/portfolio Â· Venture strategy",
   sampleSize: 38,
   totalVentureOnSite: 41,
   activeVentureOnSite: 37,
@@ -134,7 +134,7 @@ const MOTIVE_SECTOR_TAXONOMY = [
   },
 ];
 
-/** Adjacent tech sectors — kept in pipeline but deprioritized vs core fintech */
+/** Adjacent tech sectors â€” kept in pipeline but deprioritized vs core fintech */
 const ADJACENT_SECTORS = [
   { pattern: /hr technology|human resources|workforce planning|headcount|compensation benchmarking/i, label: "HR Technology" },
   { pattern: /proptech|commercial real estate buildings|access control|energy management|tenant experience/i, label: "PropTech / CRE operations" },
@@ -276,7 +276,6 @@ window.MotiveReference = {
   buildReferenceCorpus,
   classifyCompanySector,
 };
-
 (function () {
   "use strict";
 
@@ -475,7 +474,7 @@ function scaleThesisSimilarity(cosineSim) {
 function parseMoney(text) {
   const arrMatch = text.match(/\$([\d.]+)\s*([mbk])\s*arr/i);
   const gmvMatch = text.match(/\$([\d.]+)\s*([mbn])\+?\s*gmv/i);
-  const raiseMatch = text.match(/(?:raising|raise)\s+[£€$]?([\d.]+)\s*([mbk])/i);
+  const raiseMatch = text.match(/(?:raising|raise)\s+[Â£â‚¬$]?([\d.]+)\s*([mbk])/i);
 
   const toNumber = (value, unit) => {
     const mult = { k: 1e3, m: 1e6, b: 1e9, n: 1e9 }[unit.toLowerCase()] || 1;
@@ -1096,6 +1095,29 @@ function mkReason(text, linkKey = null) {
   return reason;
 }
 
+const PORTFOLIO_HREF = SOURCE_LINKS.portfolio.href;
+
+function isPortfolioHref(href) {
+  return href === PORTFOLIO_HREF;
+}
+
+/** Keep at most one Motive venture portfolio link across highlight + caution bullets. */
+function enforceSinglePortfolioLink(highlights, cautions) {
+  let portfolioUsed = false;
+
+  const normalize = (reason) => {
+    if (!isPortfolioHref(reason.href)) return reason;
+    if (portfolioUsed) return { text: reason.text };
+    portfolioUsed = true;
+    return reason;
+  };
+
+  return {
+    positiveReasons: highlights.map(normalize),
+    cautionReasons: cautions.map(normalize),
+  };
+}
+
 function companyHash(name) {
   let h = 0;
   for (let i = 0; i < (name || "").length; i++) {
@@ -1181,16 +1203,14 @@ function buildHighlightReasons(ctx) {
       candidates.push({
         priority: componentScores.traction + 6,
         reason: mkReason(
-          `Large payments volume signal in pitch - mirrors Motive infra bets like forage-class platforms.`,
-          "portfolio"
+          `Large payments volume signal in pitch - mirrors Motive infra bets like forage-class platforms.`
         ),
       });
     } else if (metrics.designPartners) {
       candidates.push({
         priority: componentScores.traction + 5,
         reason: mkReason(
-          `Signed tier-1 bank or institutional design partners - a pattern across Motive's infrastructure portfolio.`,
-          "portfolio"
+          `Signed tier-1 bank or institutional design partners - a pattern across Motive's infrastructure portfolio.`
         ),
       });
     } else if (metrics.customers) {
@@ -1213,8 +1233,7 @@ function buildHighlightReasons(ctx) {
               `${snippet || "Founding team"} brings a prior exit and domain depth worth prioritizing.`,
             ],
             h + 1
-          ),
-          "portfolio"
+          )
         ),
       });
     } else if (TIER1_COMPANIES.test(row.founder_background || "")) {
@@ -1320,8 +1339,7 @@ function buildHighlightReasons(ctx) {
             `AI-native automation for regulated financial ops fits Motive's recent investment pattern.`,
           ],
           h + 5
-        ),
-        "portfolio"
+        )
       ),
     });
   }
@@ -1552,8 +1570,11 @@ function triageCompanies(rows) {
       mandate,
     };
 
-    const positiveReasons = mandate.passed ? buildHighlightReasons(reasonCtx) : [];
-    const cautionReasons = mandate.passed ? buildCautionReasons(reasonCtx) : [];
+    const rawHighlights = mandate.passed ? buildHighlightReasons(reasonCtx) : [];
+    const rawCautions = mandate.passed ? buildCautionReasons(reasonCtx) : [];
+    const { positiveReasons, cautionReasons } = mandate.passed
+      ? enforceSinglePortfolioLink(rawHighlights, rawCautions)
+      : { positiveReasons: [], cautionReasons: [] };
     const safeWebsiteUrl = sanitizeWebsiteUrl(row.website);
 
     let tier = "Filtered Out";
