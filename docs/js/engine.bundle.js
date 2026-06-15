@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Motive Partners venture mandate + portfolio-calibrated scoring profile.
  * Venture portfolio analytics derived from motivepartners.com/portfolio (Venture filter).
  * As of June 2026: 41 total Venture entries on site; 38 in similarity corpus (3 realized exits excluded).
