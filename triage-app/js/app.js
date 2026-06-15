@@ -391,7 +391,11 @@
         "filter_reasons",
       ];
 
-      const lines = [headers.join(",")];
+      const lines = [];
+      if (results.summary?.scoringProfile) {
+        lines.push(`# scoringProfile: ${results.summary.scoringProfile}`);
+      }
+      lines.push(headers.join(","));
 
       results.shortlisted.forEach((row, index) => {
         lines.push(

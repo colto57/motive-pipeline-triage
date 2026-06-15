@@ -1596,7 +1596,7 @@ function triageCompanies(rows) {
       shortlisted: shortlisted.length,
       filteredOut: filteredOut.length,
       priorityReview: shortlisted.filter((r) => r.tier === "Priority Review").length,
-      scoringProfile: `Motive venture portfolio-calibrated (n=${PORTFOLIO_N})`,
+      scoringProfile: `Motive venture portfolio-calibrated (n=${PORTFOLIO_N} active; realized exits excluded)`,
       generatedAt: new Date().toISOString(),
     },
     shortlisted,
