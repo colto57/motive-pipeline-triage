@@ -61,14 +61,23 @@ body {
 .brand {
   display: flex;
   align-items: center;
+  gap: 12px;
   text-decoration: none;
   color: var(--text);
+}
+
+.brand-mark {
+  height: 36px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
 }
 
 .brand-logo {
   height: 14px;
   width: auto;
   display: block;
+  flex-shrink: 0;
 }
 
 .header-meta {
@@ -597,7 +606,20 @@ h1 {
   border-top: 1px solid var(--border);
   background: var(--bg-subtle);
   padding: 24px;
-  text-align: center;
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.footer-mark {
+  height: 22px;
+  width: auto;
+  flex-shrink: 0;
+  opacity: 0.4;
 }
 
 .site-footer p {
