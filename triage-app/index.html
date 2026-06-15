@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pipeline Triage · Motive Partners</title>
-    <link rel="stylesheet" href="css/styles.css?v=20" />
+    <link rel="stylesheet" href="css/styles.css?v=21" />
   </head>
   <body>
     <header class="site-header">
@@ -102,53 +102,338 @@
       </section>
 
       <section class="methodology" id="methodology">
-        <h2>How scoring works</h2>
+        <h2>How we score</h2>
         <p class="panel-sub methodology-intro">
-          Scoring is calibrated against 38 active Motive venture investments on
+          Every score is computed in-browser from your CSV fields — no opaque model. We calibrate against
+          <strong>n=38</strong> active Motive venture investments on
           <a href="https://motivepartners.com/portfolio" target="_blank" rel="noopener noreferrer">motivepartners.com/portfolio</a>
-          (Venture filter; 41 total entries). Realized/exited positions are excluded from the similarity corpus. Hard filters first; then portfolio-weighted ranking.
+          (41 Venture entries on site; 3 realized exits excluded from the similarity corpus: Corastone, Februar, Vitera).
+          Hard filters run first; in-mandate companies get a weighted sum of 14 component scores, a spread transform, and a small tiebreaker.
         </p>
-        <div class="method-grid">
-          <article id="mandate-gates">
-            <h3>1 · Strict mandate gates</h3>
-            <p>Two hard mandate gates — both must pass: <strong>Pre-Seed – Series A</strong> and <strong>US or Europe HQ</strong>. Adjacent sectors (HR Tech, PropTech, etc.) stay in the shortlist but score lower.</p>
+
+        <div class="formula-box" id="scoring-formula">
+          <h3>Scoring formula</h3>
+          <ol class="formula-steps">
+            <li><strong>Hard filters</strong> — stage and geography only. Fail either → filtered out (score 0).</li>
+            <li><strong>Component scores</strong> — each factor returns 0–100 using the rules below.</li>
+            <li>
+              <strong>Weighted raw</strong> —
+              <code>Σ (component × weight)</code> across 14 factors (weights sum to 100%) plus a tiebreaker bonus (0–2 pts).
+            </li>
+            <li>
+              <strong>Spread transform</strong> — stretches mid-pack scores so tiers separate cleanly:
+              raw ≥74 → <code>74 + (raw−74)×1.4</code>; ≥62 → <code>62 + (raw−62)×1.1</code>; ≥48 → <code>48 + (raw−48)×0.95</code>; else <code>48 − (48−raw)×0.8</code>.
+            </li>
+            <li><strong>Overall score</strong> — spread result rounded to one decimal, clamped 0–100.</li>
+            <li><strong>Tier</strong> — ≥76 Priority Review · 60–75 Standard Review · &lt;60 Low Priority.</li>
+          </ol>
+          <p class="formula-note">
+            Tiebreaker (+0.2–2.0): disclosed ARR tiers, growth ≥50%, design partners, hub city, portfolio TF-IDF match ≥0.08, serial founder, tier-1 operator background. Used only when overall scores tie; ranking then falls back to traction → founder execution → velocity → thesis → raise size → name.
+          </p>
+        </div>
+
+        <div class="method-sections">
+          <article class="method-block" id="mandate-gates">
+            <h3>Hard filters (mandate gates)</h3>
+            <p class="method-lead">Only two gates remove a company from the shortlist. Sector is <em>not</em> hard-filtered.</p>
+            <dl class="factor-meta">
+              <dt>Stage gate</dt>
+              <dd><code>stage</code> must normalize to <strong>pre-seed</strong>, <strong>seed</strong>, or <strong>series a</strong>. Series B+ → filtered with routing note.</dd>
+              <dt>Geography gate</dt>
+              <dd>
+                <code>hq_geography</code> must parse as US (state abbreviation, “United States”, “US/USA”) or Europe (UK, Germany, France, Netherlands, Belgium, Spain, etc. — full list in code).
+                Outside US/Europe → filtered.
+              </dd>
+            </dl>
           </article>
-          <article id="portfolio-sector-fit">
-            <h3>2 · Portfolio sector fit</h3>
-            <p>Sector weights mirror Motive's 38-company venture corpus: Wealth 34%, Banking/Payments 32%, AI/Data 16%. Source: <a href="https://motivepartners.com/portfolio" target="_blank" rel="noopener noreferrer">Motive venture portfolio</a>.</p>
+
+          <article class="method-block" id="adjacent-sectors">
+            <h3>Soft sector deprioritization</h3>
+            <p class="method-lead">Adjacent tech sectors stay in the shortlist but score lower on portfolio sector fit (cap 5–42 vs core fintech 50–100).</p>
+            <dl class="factor-meta">
+              <dt>Adjacent patterns</dt>
+              <dd>HR Tech, PropTech/CRE ops, logistics/supply chain, pure healthcare IT, standalone climate/ESG, non-wealth real estate tech — matched via regex on <code>sector</code> + <code>pitch_summary</code> + <code>founder_background</code>.</dd>
+              <dt>Penalty rules</dt>
+              <dd>Partial fintech overlap: <code>round(50 + portfolioWeight×140) − 22</code>, capped 5–42. No overlap: 18. Unclassified weak fintech signal: 28.</dd>
+            </dl>
           </article>
-          <article id="thesis-similarity">
-            <h3>3 · Thesis similarity</h3>
-            <p>TF-IDF cosine similarity vs Motive thesis statements and 38 venture portfolio references. Raw cosine scores (typically 0.02–0.18) are rescaled to 0–100 for display (25 + cosine × 400).</p>
-          </article>
-          <article id="deal-economics">
-            <h3>4 · Deal economics</h3>
-            <p>Check size fit ($1–10M per <a href="https://motivepartners.com" target="_blank" rel="noopener noreferrer">Motive Partners</a>), capital efficiency, infrastructure moat, and vertical AI fit.</p>
-          </article>
-          <article>
-            <h3>5 · Geography &amp; age</h3>
-            <p>Hub-city bonus (NYC, Berlin, London, SF). Company age scored against stage-typical windows.</p>
-          </article>
-          <article>
-            <h3>6 · Output tiers</h3>
-            <p>≥76 Priority Review · 60–75 Standard Review · &lt;60 Low Priority. Every result includes reasons.</p>
+
+          <h3 class="factors-heading">Scoring components (14 factors)</h3>
+          <p class="factors-sub">Expand any row for weight, calculation rules, example, and CSV fields used.</p>
+
+          <details class="factor-detail" id="thesis-similarity" open>
+            <summary><span class="factor-name">Thesis similarity</span><span class="factor-weight">16%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>How closely the inbound pitch language matches Motive’s venture thesis and portfolio corpus.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Tokenize <code>company_name</code>, <code>sector</code>, <code>founder_background</code>, <code>pitch_summary</code>, <code>stage</code>, <code>hq_geography</code>, <code>founding_year</code>.
+                Build TF-IDF vectors; cosine vs composite of 7 thesis statements + 38 portfolio company docs.
+                Display score: <code>round(25 + cosine × 400)</code>, clamped 0–95. Raw cosine typically 0.02–0.18.
+              </dd>
+              <dt>Example</dt>
+              <dd>Embedded payments API + open banking language → cosine ~0.14 → <strong>81</strong>. Generic HR workforce SaaS with no fintech terms → cosine ~0.04 → <strong>41</strong>.</dd>
+              <dt>Data source</dt>
+              <dd>All CSV text fields above; reference corpus from <code>MOTIVE_THESIS_STATEMENTS</code> + <code>MOTIVE_VENTURE_PORTFOLIO</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="portfolio-sector-fit">
+            <summary><span class="factor-name">Portfolio sector fit</span><span class="factor-weight">17%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>Alignment with Motive’s observed venture sector mix (Wealth 34%, Banking/Payments 32%, AI/Data 16%, Capital Markets 11%, Insurance 5%, Business Services 3%).</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Regex-match <code>sector</code> + <code>pitch_summary</code> + <code>founder_background</code> against <code>MOTIVE_SECTOR_TAXONOMY</code>.
+                Core fintech: <code>round(50 + primary.portfolioWeight × 140)</code>; +8 if multi-vertical match; +6 if AI/agent/LLM/automation in sector or pitch.
+                Adjacent: see soft deprioritization above.
+              </dd>
+              <dt>Example</dt>
+              <dd>Wealth/advisor workflow (34% weight) → <code>50 + 0.34×140 ≈ 98</code>. PropTech primary with partial payments overlap → capped near <strong>38</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>sector</code>, <code>pitch_summary</code>, <code>founder_background</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="traction">
+            <summary><span class="factor-name">Traction</span><span class="factor-weight">8%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>Revenue, volume, growth, and institutional validation parsed from the pitch.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Base 28. From <code>pitch_summary</code>: ARR tiers — ≥$10M +48, ≥$5M +38, ≥$1M +28, ≥$500K +18, else +6.
+                GMV ≥$100M +32; ≥$25M +18. Growth ≥100% YoY/QoQ +20; ≥50% +12. Customer count phrase +10. Design partner / tier-1 bank pilot +14.
+                Pre-revenue without pilots: −18. Clamped 0–100.
+              </dd>
+              <dt>Example</dt>
+              <dd>“$2.1M ARR, 120% YoY, 3 tier-1 bank design partners” → ~28+28+20+14 = <strong>90</strong>. “Pre-revenue, no pilots” → ~<strong>10</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>pitch_summary</code> (regex for <code>$X ARR</code>, <code>$X GMV</code>, <code>N% YoY/QoQ</code>, customer counts, design partners).</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="founder-signal">
+            <summary><span class="factor-name">Founder signal</span><span class="factor-weight">3%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>High-level founder pedigree: exits, tier-1 employers, senior titles, fintech domain.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Base 40 from <code>founder_background</code>. Serial founder/exit +35. Two tier-1 employers (Stripe, Goldman, Visa, etc.) +32; one +24; senior operator title only +12. Fintech domain keywords +14.
+                “First-time founder” caps at 48 and −8. No signals → 38. Clamped 25–95.
+              </dd>
+              <dt>Example</dt>
+              <dd>Ex-Stripe + prior exit + fintech domain → <strong>86</strong>. First-time founder, no tier-1 names → <strong>42</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>founder_background</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="founder-execution">
+            <summary><span class="factor-name">Founder execution index</span><span class="factor-weight">8%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>Depth of operator experience: tenure, roles, exits, fintech employer count, team structure.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Base 32. Domain tenure ≥10 yr +22; ≥5 +14; ≥2 +6. Multiple operator titles +16; one +10. Advisor-heavy without operators −12.
+                Named exit/acquirer +20; serial/prior exit +14. ≥3 fintech employers +18; 2 +12; 1 +7. Co-founder + technical leadership +12.
+                First-time founder caps at 52. Clamped 30–95.
+              </dd>
+              <dt>Example</dt>
+              <dd>10+ yrs at Goldman + CTO co-founder + exit to acquirer → <strong>88</strong>. Advisor-only profile → <strong>35</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>founder_background</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="geography-affinity">
+            <summary><span class="factor-name">Geography affinity</span><span class="factor-weight">5%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>HQ fit with Motive’s US/Europe mandate and historical hub concentration (~42% US, ~58% Europe in portfolio).</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Top hubs NYC/London/Berlin: 92–94. Secondary (SF, Paris, Amsterdam, Munich, etc.): 78–84.
+                Other in-mandate US: 64+2; Europe: 58+2. Out of mandate → 0 (filtered).
+              </dd>
+              <dt>Example</dt>
+              <dd>“Berlin, Germany” → <strong>96</strong>. “Boulder, CO” (in-mandate, non-hub) → <strong>66</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>hq_geography</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="company-age-fit">
+            <summary><span class="factor-name">Company age fit</span><span class="factor-weight">6%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>Whether company age at submission matches typical Motive entry timing for that stage.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Age = 2026 − <code>founding_year</code>. Ideal windows: Pre-Seed 0–2 yr (acceptable to 3), Seed 1–4 (to 6), Series A 2–5 (to 7).
+                In ideal window: 95 minus distance from center (up to −12). Young for stage: 68–74. Slightly over: 78 − 6×years over. Mature: max(45, 58 − 5×years over). Missing year → 50.
+              </dd>
+              <dt>Example</dt>
+              <dd>Seed founded 2023 (3 yrs) → <strong>91</strong>. Series A founded 2017 (9 yrs) → <strong>48</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>founding_year</code>, <code>stage</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="portfolio-stage-affinity">
+            <summary><span class="factor-name">Portfolio stage affinity</span><span class="factor-weight">5%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>How often Motive deploys at this stage in the 38-company corpus.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Stage mix from portfolio: Pre-Seed ~21%, Seed ~42%, Series A ~37%.
+                Highest-frequency stage → 95. Mix ≥30% → 82 + round(mix×30). ≥15% → 68 + round(mix×40). Else 58.
+              </dd>
+              <dt>Example</dt>
+              <dd>Seed (42% of corpus) → <strong>95</strong>. Pre-Seed (21%) → <strong>76</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>stage</code>; calibration from <code>MOTIVE_VENTURE_PORTFOLIO.investmentStage</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="check-size-fit">
+            <summary><span class="factor-name">Check size fit</span><span class="factor-weight">6%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>Whether the disclosed raise matches Motive’s stated $1–10M lead/co-lead check size.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Parse “raising/raise $X M/K” from pitch. In $1–10M → 95. Below $1M → 72. $10–20M → 58. Well above → 35. Undisclosed → 55.
+              </dd>
+              <dt>Example</dt>
+              <dd>“Raising $6M seed” → <strong>95</strong>. “Raising $25M Series A” → <strong>58</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>pitch_summary</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="capital-efficiency">
+            <summary><span class="factor-name">Capital efficiency</span><span class="factor-weight">6%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>ARR generated per year since founding, vs stage benchmarks.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Base 50. ARR/age: ≥$1.5M/yr +28; ≥$500K/yr +18; ≥$100K ARR +8.
+                Stage benchmarks: Seed $400K ARR, Series A $2M — meeting benchmark +14; below −6.
+                GMV or design partners without ARR: +12 qualitative. Pre-revenue → 38.
+              </dd>
+              <dt>Example</dt>
+              <dd>$3M ARR, 3 yrs old Seed → ~$1M/yr → <strong>78</strong>. Pre-revenue → <strong>38</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>pitch_summary</code>, <code>founding_year</code>, <code>stage</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="infrastructure-moat">
+            <summary><span class="factor-name">Infrastructure moat</span><span class="factor-weight">6%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>Platform depth: APIs, regulated integrations, network effects, mission-critical workflows, B2B GTM.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Base 42. Regex hits on <code>sector</code> + <code>pitch_summary</code> + <code>founder_background</code>:
+                API/platform/infra +18; bank/regulated/compliance partner +22; network/marketplace scale +14; core banking/settlement +16; B2B enterprise GTM +12.
+                Two+ moat signals +10 bonus. Pure B2C/mobile without B2B/API −12. Clamped 0–100.
+              </dd>
+              <dt>Example</dt>
+              <dd>“Open banking API + tier-1 bank design partner + B2B treasury” → <strong>92</strong>. Consumer mobile app only → <strong>30</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>sector</code>, <code>pitch_summary</code>, <code>founder_background</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="vertical-ai-fit">
+            <summary><span class="factor-name">Vertical AI fit</span><span class="factor-weight">5%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>AI applied to specific financial workflows — Motive’s 2024–2026 investment theme.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                AI signal (AI/agent/LLM/ML/automation) + financial workflow (AP/AR, underwriting, treasury, claims, etc.).
+                Both → 92. AI only → 52. Workflow only → 68. Neither → 42. Generic “AI-powered everything” −15. Regulatory tailwind (PSD2, embedded finance) +8.
+              </dd>
+              <dt>Example</dt>
+              <dd>“LLM agents for loan underwriting compliance” → <strong>92</strong>. “General-purpose chatbot” → <strong>37</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>sector</code>, <code>pitch_summary</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="traction-velocity">
+            <summary><span class="factor-name">Traction velocity index</span><span class="factor-weight">5%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>Monthly ARR velocity (ARR ÷ months since founding) vs stage benchmarks from portfolio analytics.</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Monthly velocity = ARR / max(6, age in months). Compare to p25/p50/p75 by stage:
+                Pre-Seed ~$2.5K/$9K/$22K per month; Seed ~$14K/$28K/$55K; Series A ~$45K/$100K/$200K.
+                At/above p75 → 92; p50 → 78; p25 → 62; below → 45. Growth ≥100% +12; ≥50% +7. No ARR → 38–58 fallback.
+              </dd>
+              <dt>Example</dt>
+              <dd>$1.2M ARR, 2 yrs Seed → ~$50K/mo (above p50) → <strong>78</strong>. $200K ARR, 3 yrs Series A → <strong>45</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>pitch_summary</code>, <code>founding_year</code>, <code>stage</code>.</dd>
+            </dl>
+          </details>
+
+          <details class="factor-detail" id="portfolio-gap">
+            <summary><span class="factor-name">Portfolio gap score</span><span class="factor-weight">4%</span></summary>
+            <dl class="factor-meta">
+              <dt>What it measures</dt>
+              <dd>White-space bonus for on-thesis sectors where Motive is underweight (&lt;10% of portfolio).</dd>
+              <dt>How it's calculated</dt>
+              <dd>
+                Core fintech only. Underweight sector keys (Insurance 5%, Business Services 3%) → 88.
+                Weight ≤12% → 72. Weight ≥30% → 55 (dense cluster). Else 64. Adjacent/off-thesis → 28.
+              </dd>
+              <dt>Example</dt>
+              <dd>Insurtech core match (5% weight) → <strong>88</strong>. Wealth (34% weight) → <strong>55</strong>.</dd>
+              <dt>Data source</dt>
+              <dd><code>sector</code>, <code>pitch_summary</code>, <code>founder_background</code> (via sector classification).</dd>
+            </dl>
+          </details>
+
+          <article class="method-block" id="output-tiers">
+            <h3>Output tiers &amp; ranking</h3>
+            <dl class="factor-meta">
+              <dt>Tiers</dt>
+              <dd><strong>Priority Review</strong> ≥76 · <strong>Standard Review</strong> 60–75 · <strong>Low Priority</strong> &lt;60 · <strong>Filtered Out</strong> failed mandate gates.</dd>
+              <dt>Explainability</dt>
+              <dd>Each card shows component bars (context only — overall rank uses weighted formula above) plus 2–4 highlight bullets and up to 3 caution flags with plain-language reasons.</dd>
+            </dl>
           </article>
         </div>
+
         <section class="portfolio-insights" id="portfolioInsights">
-          <h3>Portfolio-calibrated insights</h3>
+          <h3>Portfolio calibration (n=38)</h3>
           <p class="insights-sub">
-            Stage affinity, founder execution, and traction velocity are calibrated from
-            <a href="https://motivepartners.com/portfolio" target="_blank" rel="noopener noreferrer">Motive's venture portfolio</a>
-            (n=38 active corpus).
+            Sector weights, stage affinity, velocity benchmarks, and TF-IDF reference corpus are derived from
+            <a href="https://motivepartners.com/portfolio" target="_blank" rel="noopener noreferrer">Motive's venture portfolio</a>.
+            Realized exits (Corastone, Februar, Vitera) are excluded; AMP remains as a wealth comp reference.
           </p>
           <div class="stage-mix-row">
             <span class="stage-mix-label">Historical stage mix at investment</span>
             <div class="stage-mix-bar" id="stageMixBar" aria-hidden="true"></div>
             <span class="stage-mix-labels" id="stageMixLabels">Pre-Seed · Seed · Series A</span>
           </div>
-          <p class="founder-explainer">
-            <strong>How we score founders:</strong> Beyond tier-1 name matching, the Founder Execution Index parses domain tenure, operator vs. advisor roles, exit quality, fintech employer depth, and technical co-founder signals — producing wider 30–95 spreads with company-specific reasons.
-          </p>
+          <dl class="factor-meta portfolio-stats">
+            <dt>Sector mix</dt>
+            <dd>Wealth 34% · Banking/Payments 32% · AI/Data 16% · Capital Markets 11% · Insurance 5% · Business Services 3%</dd>
+            <dt>Geography mix</dt>
+            <dd>US ~42% · Europe ~58% · Top hubs: NYC, Berlin, London (+ secondary: SF, Paris, Amsterdam, Munich, …)</dd>
+          </dl>
         </section>
       </section>
     </div>
@@ -184,7 +469,7 @@
       </article>
     </template>
 
-    <script src="js/engine.bundle.js?v=20"></script>
-    <script src="js/app.js?v=20"></script>
+    <script src="js/engine.bundle.js?v=21"></script>
+    <script src="js/app.js?v=21"></script>
   </body>
 </html>

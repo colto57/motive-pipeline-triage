@@ -10,7 +10,9 @@
 
 
 
-The triage system enforces Motive Partners’ stated **venture mandate** — Pre-Seed through Series A, US/Europe only — then ranks all in-mandate companies using weights **calibrated from 38 Motive venture portfolio companies** listed on [motivepartners.com/portfolio](https://motivepartners.com/portfolio). Adjacent tech sectors (HR Tech, PropTech, etc.) remain in the pipeline but are **deprioritized via scoring**, not hard-filtered.
+The triage system enforces Motive Partners? stated **venture mandate** ? Pre-Seed through Series A, US/Europe only ? then ranks all in-mandate companies using weights **calibrated from 38 Motive venture portfolio companies** listed on [motivepartners.com/portfolio](https://motivepartners.com/portfolio). Adjacent tech sectors (HR Tech, PropTech, etc.) remain in the pipeline but are **deprioritized via scoring**, not hard-filtered.
+
+The live demo?s **How we score** panel documents all 14 weighted factors with explicit rules (weights, formulas, CSV fields, and examples), plus hard filters, sector soft penalties, the spread transform, tiebreaker, and tier thresholds ? mirroring `triage_engine.js` with no black-box language.
 
 
 
