@@ -31,17 +31,17 @@ const MOTIVE_MANDATE = {
       "eu",
     ],
   },
-  checkSizeUsd: { min: 1000000, max: 10000000, label: "$1â€“10M lead/co-lead" },
+  checkSizeUsd: { min: 1000000, max: 10000000, label: "$1-10M lead/co-lead" },
   currentYear: 2026,
 };
 
 /**
  * Observed venture portfolio mix (38 companies in similarity corpus, June 2026).
- * Source: motivepartners.com/portfolio Â· Venture strategy filter.
+ * Source: motivepartners.com/portfolio · Venture strategy filter.
  * Total Venture on site = 41 (includes 4 realized); corpus excludes 3 realized (Corastone, Februar, Vitera).
  */
 const MOTIVE_PORTFOLIO_ANALYTICS = {
-  source: "motivepartners.com/portfolio Â· Venture strategy",
+  source: "motivepartners.com/portfolio · Venture strategy",
   sampleSize: 38,
   totalVentureOnSite: 41,
   activeVentureOnSite: 37,
@@ -145,9 +145,9 @@ const NON_FINTECH_SECTORS = [
 ];
 
 const COMPANY_AGE_BY_STAGE = {
-  "pre-seed": { idealMin: 0, idealMax: 2, acceptableMax: 3, label: "0â€“2 years" },
-  seed: { idealMin: 1, idealMax: 4, acceptableMax: 6, label: "1â€“4 years" },
-  "series a": { idealMin: 2, idealMax: 5, acceptableMax: 7, label: "2â€“5 years" },
+  "pre-seed": { idealMin: 0, idealMax: 2, acceptableMax: 3, label: "0-2 years" },
+  seed: { idealMin: 1, idealMax: 4, acceptableMax: 6, label: "1-4 years" },
+  "series a": { idealMin: 2, idealMax: 5, acceptableMax: 7, label: "2-5 years" },
 };
 
 const SCORING_WEIGHTS = {
@@ -298,9 +298,9 @@ const DEFAULT_SCORING_WEIGHTS = {
 };
 const WEIGHTS = SCORING_WEIGHTS || DEFAULT_SCORING_WEIGHTS;
 const DEFAULT_COMPANY_AGE_BY_STAGE = {
-  "pre-seed": { idealMin: 0, idealMax: 2, acceptableMax: 3, label: "0â€“2 years" },
-  seed: { idealMin: 1, idealMax: 4, acceptableMax: 6, label: "1â€“4 years" },
-  "series a": { idealMin: 2, idealMax: 5, acceptableMax: 7, label: "2â€“5 years" },
+  "pre-seed": { idealMin: 0, idealMax: 2, acceptableMax: 3, label: "0-2 years" },
+  seed: { idealMin: 1, idealMax: 4, acceptableMax: 6, label: "1-4 years" },
+  "series a": { idealMin: 2, idealMax: 5, acceptableMax: 7, label: "2-5 years" },
 };
 const AGE_BY_STAGE = COMPANY_AGE_BY_STAGE || DEFAULT_COMPANY_AGE_BY_STAGE;
 function defaultClassifyCompanySector() {
@@ -430,7 +430,7 @@ function cosineSimilarity(a, b) {
 function parseMoney(text) {
   const arrMatch = text.match(/\$([\d.]+)\s*([mbk])\s*arr/i);
   const gmvMatch = text.match(/\$([\d.]+)\s*([mbn])\+?\s*gmv/i);
-  const raiseMatch = text.match(/(?:raising|raise)\s+[Â£â‚¬$]?([\d.]+)\s*([mbk])/i);
+  const raiseMatch = text.match(/(?:raising|raise)\s+[£€$]?([\d.]+)\s*([mbk])/i);
 
   const toNumber = (value, unit) => {
     const mult = { k: 1e3, m: 1e6, b: 1e9, n: 1e9 }[unit.toLowerCase()] || 1;
@@ -471,7 +471,7 @@ function scorePortfolioSectorFit(row) {
     (a, b) => b.portfolioWeight - a.portfolioWeight
   )[0];
 
-  let score = Math.round(55 + primary.portfolioWeight * 120);
+  let score = Math.round(50 + primary.portfolioWeight * 140);
 
   if (classification.matches.length > 1) {
     score += 8;
@@ -481,12 +481,12 @@ function scorePortfolioSectorFit(row) {
   }
 
   reasons.unshift(
-    `Maps to ${primary.label} â€” ${Math.round(primary.portfolioWeight * 100)}% of Motive's venture portfolio (n=${PORTFOLIO_N}).`
+    `Maps to ${primary.label} - ${Math.round(primary.portfolioWeight * 100)}% of Motive's venture portfolio (n=${PORTFOLIO_N}).`
   );
 
   if (/\bai\b|agent|llm|automation/i.test(`${row.sector} ${row.pitch_summary}`)) {
     score += 6;
-    reasons.push("Verticalized AI theme aligns with Motive's 2024â€“2026 venture investment pattern.");
+    reasons.push("Verticalized AI theme aligns with Motive's 2024-2026 venture investment pattern.");
   }
 
   return {
@@ -513,7 +513,7 @@ function scoreGeographyAffinity(geo, hq) {
   if (geo.hub) {
     score += 14;
     reasons.push(
-      `Located in ${geo.hub.replace(/\b\w/g, (c) => c.toUpperCase())} â€” a core Motive venture hub (NYC, Berlin, London, etc.).`
+      `Located in ${geo.hub.replace(/\b\w/g, (c) => c.toUpperCase())} - a core Motive venture hub (NYC, Berlin, London, etc.).`
     );
   } else {
     reasons.push(`HQ "${hq}" is in-mandate but not a top historical Motive venture hub city.`);
@@ -531,7 +531,7 @@ function scoreCompanyAge(row, stage) {
   if (Number.isNaN(foundingYear)) {
     return {
       score: 50,
-      reasons: ["Founding year missing â€” cannot assess company age vs. stage."],
+      reasons: ["Founding year missing - cannot assess company age vs. stage."],
       age: null,
     };
   }
@@ -550,7 +550,7 @@ function scoreCompanyAge(row, stage) {
   } else {
     score = 48;
     reasons.push(
-      `Company age (${age} yrs) is mature for ${stage} â€” Motive venture typically backs younger companies at this stage.`
+      `Company age (${age} yrs) is mature for ${stage} - Motive venture typically backs younger companies at this stage.`
     );
   }
 
@@ -559,33 +559,49 @@ function scoreCompanyAge(row, stage) {
 
 function scoreTraction(row) {
   const metrics = parseMoney(row.pitch_summary);
-  let score = 35;
+  let score = 28;
   const reasons = [];
 
   if (metrics.arr != null) {
-    if (metrics.arr >= 5000000) {
-      score += 35;
+    if (metrics.arr >= 10000000) {
+      score += 48;
+      reasons.push(
+        `Strong ARR (${row.pitch_summary.match(/\$[\d.]+\s*[mbk]\s*ARR/i)?.[0] || "disclosed"}).`
+      );
+    } else if (metrics.arr >= 5000000) {
+      score += 38;
       reasons.push(
         `Material ARR (${row.pitch_summary.match(/\$[\d.]+\s*[mbk]\s*ARR/i)?.[0] || "disclosed"}).`
       );
+    } else if (metrics.arr >= 1000000) {
+      score += 28;
+      reasons.push(
+        `Meaningful ARR (${row.pitch_summary.match(/\$[\d.]+\s*[mbk]\s*ARR/i)?.[0] || "disclosed"}).`
+      );
     } else if (metrics.arr >= 500000) {
-      score += 25;
+      score += 18;
       reasons.push(
         `Early credible ARR (${row.pitch_summary.match(/\$[\d.]+\s*[mbk]\s*ARR/i)?.[0] || "disclosed"}).`
       );
     } else {
-      score += 12;
-      reasons.push("Modest ARR â€” traction still forming for venture scale.");
+      score += 6;
+      reasons.push("Modest ARR - traction still forming for venture scale.");
     }
   }
 
   if (metrics.gmv != null && metrics.gmv >= 100000000) {
-    score += 28;
+    score += 32;
     reasons.push(`Large payments volume / GMV signal.`);
+  } else if (metrics.gmv != null && metrics.gmv >= 25000000) {
+    score += 18;
+    reasons.push(`Meaningful GMV / payments volume signal.`);
   }
 
-  if (metrics.growth != null && metrics.growth >= 50) {
-    score += 14;
+  if (metrics.growth != null && metrics.growth >= 100) {
+    score += 20;
+    reasons.push(`Exceptional growth rate (${metrics.growthLabel}).`);
+  } else if (metrics.growth != null && metrics.growth >= 50) {
+    score += 12;
     reasons.push(`High growth rate (${metrics.growthLabel}).`);
   }
 
@@ -595,17 +611,17 @@ function scoreTraction(row) {
   }
 
   if (metrics.designPartners) {
-    score += 12;
-    reasons.push("Regulated-institution design partners â€” pattern seen in Motive infra bets.");
+    score += 14;
+    reasons.push("Regulated-institution design partners - pattern seen in Motive infra bets.");
   }
 
   if (metrics.preRevenue && metrics.arr == null && !metrics.designPartners) {
-    score -= 15;
-    reasons.push("Pre-revenue without institutional pilots â€” higher bar for Motive venture prioritization.");
+    score -= 18;
+    reasons.push("Pre-revenue without institutional pilots - higher bar for Motive venture prioritization.");
   }
 
   if (reasons.length === 0) {
-    reasons.push("Limited traction in pitch â€” validate metrics on first call.");
+    reasons.push("Limited traction in pitch - validate metrics on first call.");
   }
 
   return { score: Math.max(0, Math.min(100, score)), reasons, metrics };
@@ -613,25 +629,25 @@ function scoreTraction(row) {
 
 function scoreFounders(row) {
   const text = row.founder_background || "";
-  let score = 40;
+  let score = 32;
   const reasons = [];
 
   if (SERIAL_FOUNDER.test(text)) {
-    score += 25;
-    reasons.push("Serial founder with prior exit â€” recurring pattern in Motive portfolio.");
+    score += 32;
+    reasons.push("Serial founder with prior exit - recurring pattern in Motive portfolio.");
   }
 
   if (TIER1_COMPANIES.test(text)) {
-    score += 22;
+    score += 28;
     reasons.push("Tier-1 fintech / financial services operator background.");
   } else if (SENIOR_TITLES.test(text)) {
-    score += 12;
+    score += 14;
     reasons.push("Senior operator titles indicate relevant domain leadership.");
   }
 
   if (/first-time founders/i.test(text)) {
-    score -= 8;
-    reasons.push("First-time founders â€” requires deeper team diligence.");
+    score -= 12;
+    reasons.push("First-time founders - requires deeper team diligence.");
   }
 
   if (reasons.length === 0) {
@@ -644,27 +660,27 @@ function scoreFounders(row) {
 function scoreStageFit(stage) {
   const normalized = normalizeStage(stage);
   if (normalized === "seed") {
-    return { score: 95, reasons: ["Seed â€” most common Motive venture entry point."] };
+    return { score: 95, reasons: ["Seed - most common Motive venture entry point."] };
   }
   if (normalized === "series a") {
-    return { score: 88, reasons: ["Series A â€” upper bound of Motive venture mandate."] };
+    return { score: 88, reasons: ["Series A - upper bound of Motive venture mandate."] };
   }
   if (normalized === "pre-seed") {
-    return { score: 78, reasons: ["Pre-seed in mandate â€” typically needs stronger founder/sector fit."] };
+    return { score: 78, reasons: ["Pre-seed in mandate - typically needs stronger founder/sector fit."] };
   }
   return { score: 0, reasons: ["Stage outside venture mandate."] };
 }
 
 function scoreCheckSizeFit(row) {
   const metrics = parseMoney(row.pitch_summary);
-  const checkSize = MOTIVE_MANDATE?.checkSizeUsd || { min: 1000000, max: 10000000, label: "$1â€“10M lead/co-lead" };
+  const checkSize = MOTIVE_MANDATE?.checkSizeUsd || { min: 1000000, max: 10000000, label: "$1-10M lead/co-lead" };
   const { min, max, label } = checkSize;
   const reasons = [];
 
   if (metrics.raise == null) {
     return {
       score: 55,
-      reasons: ["Raise amount not disclosed in pitch â€” cannot confirm Motive check-size fit."],
+      reasons: ["Raise amount not disclosed in pitch - cannot confirm Motive check-size fit."],
       metrics,
     };
   }
@@ -680,17 +696,17 @@ function scoreCheckSizeFit(row) {
   } else if (metrics.raise < min) {
     score = 72;
     reasons.push(
-      `Raising below $${min / 1e6}M â€” may fit Motive pre-seed/co-invest but below typical lead check.`
+      `Raising below $${min / 1e6}M - may fit Motive pre-seed/co-invest but below typical lead check.`
     );
   } else if (metrics.raise <= max * 2) {
     score = 58;
     reasons.push(
-      `Raising ~$${raiseM.toFixed(0)}M exceeds Motive's $1â€“10M lead range â€” likely needs co-lead or growth routing.`
+      `Raising ~$${raiseM.toFixed(0)}M exceeds Motive's $1-10M lead range - likely needs co-lead or growth routing.`
     );
   } else {
     score = 35;
     reasons.push(
-      `Raise size (~$${raiseM.toFixed(0)}M) well above Motive venture mandate â€” route to growth/buyout team.`
+      `Raise size (~$${raiseM.toFixed(0)}M) well above Motive venture mandate - route to growth/buyout team.`
     );
   }
 
@@ -724,7 +740,7 @@ function scoreCapitalEfficiency(row, stage) {
       reasons.push(`Solid ARR velocity (~$${Math.round(arrPerYear / 1000)}k ARR/year since founding).`);
     } else if (metrics.arr >= 100000) {
       score += 8;
-      reasons.push("Early ARR relative to company age â€” efficiency still unproven.");
+      reasons.push("Early ARR relative to company age - efficiency still unproven.");
     }
 
     const benchmark = stageArrBenchmark[stage] ?? 400000;
@@ -732,15 +748,15 @@ function scoreCapitalEfficiency(row, stage) {
       score += 14;
       reasons.push(`ARR meets/exceeds typical ${stage} benchmark for Motive venture entry.`);
     } else if (benchmark > 0 && metrics.arr > 0) {
-      reasons.push(`ARR below typical ${stage} benchmark â€” may need exceptional founder/sector fit.`);
+      reasons.push(`ARR below typical ${stage} benchmark - may need exceptional founder/sector fit.`);
       score -= 6;
     }
   } else if (metrics.designPartners || metrics.gmv != null) {
     score += 12;
-    reasons.push("Non-ARR traction (GMV/design partners) â€” capital efficiency assessed qualitatively.");
+    reasons.push("Non-ARR traction (GMV/design partners) - capital efficiency assessed qualitatively.");
   } else if (metrics.preRevenue) {
     score = 38;
-    reasons.push("Pre-revenue â€” no capital efficiency signal yet.");
+    reasons.push("Pre-revenue - no capital efficiency signal yet.");
   } else {
     reasons.push("Insufficient metrics to assess capital efficiency.");
   }
@@ -801,7 +817,7 @@ function scoreInfrastructureMoat(row) {
 
   if (/consumer|mobile app|retail user|b2c|millennial/i.test(text) && !/b2b|enterprise|api/i.test(text)) {
     score -= 12;
-    reasons.push("B2C-oriented GTM â€” Motive venture portfolio skews B2B financial infrastructure.");
+    reasons.push("B2C-oriented GTM - Motive venture portfolio skews B2B financial infrastructure.");
   }
 
   return { score: Math.max(0, Math.min(100, score)), reasons };
@@ -822,14 +838,14 @@ function scoreVerticalAiFit(row) {
   if (aiSignal && financialWorkflow) {
     score = 92;
     reasons.push(
-      "Vertical AI applied to specific financial workflows â€” core Motive 2024â€“2026 investment theme."
+      "Vertical AI applied to specific financial workflows - core Motive 2024-2026 investment theme."
     );
   } else if (aiSignal && !financialWorkflow) {
     score = 52;
     reasons.push("AI mentioned but not clearly tied to financial workflow automation.");
   } else if (financialWorkflow && !aiSignal) {
     score = 68;
-    reasons.push("Financial workflow focus without explicit AI â€” still on-thesis for Motive infra bets.");
+    reasons.push("Financial workflow focus without explicit AI - still on-thesis for Motive infra bets.");
   } else {
     score = 42;
     reasons.push("Weak vertical AI or financial automation signal.");
@@ -837,7 +853,7 @@ function scoreVerticalAiFit(row) {
 
   if (genericAi) {
     score -= 15;
-    reasons.push("Generic AI positioning â€” risk of AI-washing vs. embedded financial automation.");
+    reasons.push("Generic AI positioning - risk of AI-washing vs. embedded financial automation.");
   }
 
   if (/regulatory tailwind|psd2|open banking|embedded finance|csrd|instant settlement/i.test(text)) {
@@ -866,6 +882,58 @@ function findBestPortfolioMatch(companyVec, idf) {
   return best;
 }
 
+function roundScore(value) {
+  return Math.round(value * 10) / 10;
+}
+
+function computeTiebreakerBonus(row, mandate, metrics, portfolioMatch) {
+  let bonus = 0;
+  if (metrics?.arr >= 10000000) bonus += 1.2;
+  else if (metrics?.arr >= 5000000) bonus += 0.9;
+  else if (metrics?.arr >= 1000000) bonus += 0.5;
+  else if (metrics?.arr >= 500000) bonus += 0.2;
+
+  if (metrics?.growth >= 100) bonus += 0.6;
+  else if (metrics?.growth >= 50) bonus += 0.3;
+
+  if (metrics?.designPartners) bonus += 0.4;
+  if (mandate.geo?.hub) bonus += 0.3;
+  if (portfolioMatch?.similarity >= 0.12) bonus += 0.5;
+  else if (portfolioMatch?.similarity >= 0.08) bonus += 0.25;
+
+  if (SERIAL_FOUNDER.test(row.founder_background || "")) bonus += 0.4;
+  if (TIER1_COMPANIES.test(row.founder_background || "")) bonus += 0.3;
+
+  return Math.min(2, bonus);
+}
+
+function applyScoreSpread(raw) {
+  if (raw >= 74) return 74 + (raw - 74) * 1.4;
+  if (raw >= 62) return 62 + (raw - 62) * 1.1;
+  if (raw >= 48) return 48 + (raw - 48) * 0.95;
+  return 48 - (48 - raw) * 0.8;
+}
+
+function compareShortlistResults(a, b) {
+  const scoreDelta = b.overallScore - a.overallScore;
+  if (Math.abs(scoreDelta) >= 1) return scoreDelta;
+
+  const tractionDelta = b.componentScores.traction - a.componentScores.traction;
+  if (tractionDelta !== 0) return tractionDelta;
+
+  const founderDelta = b.componentScores.founderSignal - a.componentScores.founderSignal;
+  if (founderDelta !== 0) return founderDelta;
+
+  const thesisDelta = b.componentScores.thesisSimilarity - a.componentScores.thesisSimilarity;
+  if (thesisDelta !== 0) return thesisDelta;
+
+  const raiseA = a.raiseAmount ?? Number.POSITIVE_INFINITY;
+  const raiseB = b.raiseAmount ?? Number.POSITIVE_INFINITY;
+  if (raiseA !== raiseB) return raiseA - raiseB;
+
+  return (a.company_name || "").localeCompare(b.company_name || "");
+}
+
 function applyMandateFilters(row) {
   const stage = normalizeStage(row.stage);
   const geo = parseGeography(row.hq_geography);
@@ -875,14 +943,14 @@ function applyMandateFilters(row) {
   if (!MANDATE_STAGES.includes(stage)) {
     failures.push({
       code: "stage",
-      message: `Stage "${row.stage}" is outside Motive venture mandate (Pre-Seed â€“ Series A). Route to growth/buyout team.`,
+      message: `Stage "${row.stage}" is outside Motive venture mandate (Pre-Seed - Series A). Route to growth/buyout team.`,
     });
   }
 
   if (!geo.inMandate) {
     failures.push({
       code: "geography",
-      message: `HQ "${row.hq_geography}" is outside US/Europe â€” Motive venture invests across North America and Europe only.`,
+      message: `HQ "${row.hq_geography}" is outside US/Europe - Motive venture invests across North America and Europe only.`,
     });
   }
 
@@ -922,7 +990,7 @@ function triageCompanies(rows) {
     const companyDoc = buildCompanyDocument(row);
     const companyVec = tfidfVector(companyDoc, idf);
     const thesisSimilarity = cosineSimilarity(companyVec, referenceComposite);
-    const thesisScore = Math.round(thesisSimilarity * 100);
+    const thesisScore = roundScore(thesisSimilarity * 100);
     const portfolioMatch = findBestPortfolioMatch(companyVec, idf);
 
     const sectorFit = scorePortfolioSectorFit(row);
@@ -950,20 +1018,25 @@ function triageCompanies(rows) {
       verticalAiFit: verticalAi.score,
     };
 
+    const tractionMetrics = traction.metrics || checkSize.metrics || parseMoney(row.pitch_summary);
+
+    const weightedRaw = mandate.passed
+      ? thesisScore * weights.thesisSimilarity +
+        sectorFit.score * weights.portfolioSectorFit +
+        traction.score * weights.traction +
+        founders.score * weights.founderSignal +
+        geoFit.score * weights.geographyAffinity +
+        ageFit.score * weights.companyAgeFit +
+        stageFit.score * weights.stageFit +
+        checkSize.score * weights.checkSizeFit +
+        capitalEff.score * weights.capitalEfficiency +
+        infraMoat.score * weights.infrastructureMoat +
+        verticalAi.score * weights.verticalAiFit +
+        computeTiebreakerBonus(row, mandate, tractionMetrics, portfolioMatch)
+      : 0;
+
     const weightedScore = mandate.passed
-      ? Math.round(
-          thesisScore * weights.thesisSimilarity +
-            sectorFit.score * weights.portfolioSectorFit +
-            traction.score * weights.traction +
-            founders.score * weights.founderSignal +
-            geoFit.score * weights.geographyAffinity +
-            ageFit.score * weights.companyAgeFit +
-            stageFit.score * weights.stageFit +
-            checkSize.score * weights.checkSizeFit +
-            capitalEff.score * weights.capitalEfficiency +
-            infraMoat.score * weights.infrastructureMoat +
-            verticalAi.score * weights.verticalAiFit
-        )
+      ? roundScore(Math.min(100, Math.max(0, applyScoreSpread(weightedRaw))))
       : 0;
 
     const positiveReasons = [];
@@ -1014,6 +1087,7 @@ function triageCompanies(rows) {
       mandate,
       tier,
       overallScore: weightedScore,
+      raiseAmount: tractionMetrics?.raise ?? null,
       componentScores,
       thesisSimilarity,
       portfolioMatch,
@@ -1028,7 +1102,7 @@ function triageCompanies(rows) {
 
   const shortlisted = results
     .filter((r) => r.mandate.passed)
-    .sort((a, b) => b.overallScore - a.overallScore || b.thesisSimilarity - a.thesisSimilarity);
+    .sort(compareShortlistResults);
 
   const filteredOut = results
     .filter((r) => !r.mandate.passed)

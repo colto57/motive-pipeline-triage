@@ -66,7 +66,7 @@
         "Scoring engine failed to load. Hard-refresh (Ctrl+Shift+R). If this persists, try Chrome/Edge."
       );
     } else {
-      setStatus("Ready — choose a CSV file or drop one in the upload area.", "success");
+      setStatus("Ready - choose a CSV file or drop one in the upload area.", "success");
     }
 
     let latestResults = null;
@@ -205,7 +205,7 @@
       if (!mappingSection || !mappingForm) return;
       mappingForm.innerHTML = "";
       const headers = analysis.rawHeaders || analysis.foundHeaders || [];
-      const options = ['<option value="">— Select column —</option>']
+      const options = ['<option value="">- Select column -</option>']
         .concat(headers.map((h) => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`))
         .join("");
 
@@ -319,7 +319,9 @@
       node.querySelector(".company-name").textContent = company.company_name;
       node.querySelector(".company-sub").textContent = `${company.stage} · ${company.sector} · ${company.hq_geography}`;
 
-      node.querySelector(".score-value").textContent = filtered ? "—" : company.overallScore;
+      node.querySelector(".score-value").textContent = filtered
+        ? "-"
+        : Number(company.overallScore).toFixed(1);
       node.querySelector(".score-label").textContent = filtered ? "Out of mandate" : "Overall";
 
       const bars = node.querySelector(".score-bars");
@@ -480,9 +482,6 @@
         .replace(/"/g, "&quot;");
     }
 
-    if (engineReady && window.SAMPLE_INBOUND_CSV) {
-      runTriage(window.SAMPLE_INBOUND_CSV, "Loaded sample pipeline (25 companies).");
-    }
   }
 
   if (document.readyState === "loading") {

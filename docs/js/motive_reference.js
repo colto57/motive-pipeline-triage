@@ -31,7 +31,7 @@ const MOTIVE_MANDATE = {
       "eu",
     ],
   },
-  checkSizeUsd: { min: 1000000, max: 10000000, label: "$1–10M lead/co-lead" },
+  checkSizeUsd: { min: 1000000, max: 10000000, label: "$1-10M lead/co-lead" },
   currentYear: 2026,
 };
 
@@ -145,9 +145,9 @@ const NON_FINTECH_SECTORS = [
 ];
 
 const COMPANY_AGE_BY_STAGE = {
-  "pre-seed": { idealMin: 0, idealMax: 2, acceptableMax: 3, label: "0–2 years" },
-  seed: { idealMin: 1, idealMax: 4, acceptableMax: 6, label: "1–4 years" },
-  "series a": { idealMin: 2, idealMax: 5, acceptableMax: 7, label: "2–5 years" },
+  "pre-seed": { idealMin: 0, idealMax: 2, acceptableMax: 3, label: "0-2 years" },
+  seed: { idealMin: 1, idealMax: 4, acceptableMax: 6, label: "1-4 years" },
+  "series a": { idealMin: 2, idealMax: 5, acceptableMax: 7, label: "2-5 years" },
 };
 
 const SCORING_WEIGHTS = {
