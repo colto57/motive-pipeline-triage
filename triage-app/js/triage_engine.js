@@ -803,7 +803,6 @@ const SOURCE_LINKS = {
   portfolio: { href: "https://motivepartners.com/portfolio", label: "Motive portfolio" },
   motive: { href: "https://motivepartners.com", label: "Motive Partners" },
   thesisMethod: { href: "#thesis-similarity", label: "methodology" },
-  mandateCheck: { href: "#deal-economics", label: "check size mandate" },
   sectorMethod: { href: "#portfolio-sector-fit", label: "sector weighting" },
   mandateGates: { href: "#mandate-gates", label: "mandate gates" },
 };
@@ -1079,8 +1078,7 @@ function buildHighlightReasons(ctx) {
     candidates.push({
       priority: componentScores.checkSizeFit,
       reason: mkReason(
-        `Raising ~$${raiseM.toFixed(1)}M fits Motive's $1-10M lead/co-lead check size.`,
-        "mandateCheck"
+        `Raising ~$${raiseM.toFixed(1)}M fits Motive's $1-10M lead/co-lead check size.`
       ),
     });
   }
@@ -1140,16 +1138,13 @@ function buildCautionReasons(ctx) {
 
   if (checkSize.reasons.some((r) => r.includes("not disclosed"))) {
     cautions.push(
-      mkReason(
-        `Raise size not stated in pitch - confirm fit against Motive's $1-10M mandate.`,
-        "mandateCheck"
-      )
+      mkReason(`Raise size not stated in pitch - confirm fit against Motive's $1-10M mandate.`)
     );
   } else {
     const raiseFlag = checkSize.reasons.find(
       (r) => r.includes("above") || r.includes("growth") || r.includes("exceeds")
     );
-    if (raiseFlag) cautions.push(mkReason(raiseFlag, "mandateCheck"));
+    if (raiseFlag) cautions.push(mkReason(raiseFlag));
   }
 
   if (/first[- ]time founders?/i.test(row.founder_background || "")) {
