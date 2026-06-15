@@ -6,11 +6,16 @@ const {
   MOTIVE_MANDATE,
   MOTIVE_VENTURE_PORTFOLIO,
   MOTIVE_SECTOR_TAXONOMY,
+  MOTIVE_PORTFOLIO_ANALYTICS,
   COMPANY_AGE_BY_STAGE,
   SCORING_WEIGHTS,
   buildReferenceCorpus,
   classifyCompanySector,
 } = window.MotiveReference || {};
+
+const PORTFOLIO_N = MOTIVE_PORTFOLIO_ANALYTICS?.sampleSize || MOTIVE_VENTURE_PORTFOLIO.length;
+const US_SHARE = Math.round((MOTIVE_PORTFOLIO_ANALYTICS?.geographyMix?.united_states || 0.42) * 100);
+const EU_SHARE = Math.round((MOTIVE_PORTFOLIO_ANALYTICS?.geographyMix?.europe || 0.58) * 100);
 
 const STOP_WORDS = new Set([
   "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with",
@@ -182,7 +187,7 @@ function scorePortfolioSectorFit(row) {
   }
 
   reasons.unshift(
-    `Maps to ${primary.label} — ${Math.round(primary.portfolioWeight * 100)}% of Motive's venture portfolio (n=41).`
+    `Maps to ${primary.label} — ${Math.round(primary.portfolioWeight * 100)}% of Motive's venture portfolio (n=${PORTFOLIO_N}).`
   );
 
   if (/\bai\b|agent|llm|automation/i.test(`${row.sector} ${row.pitch_summary}`)) {
@@ -204,11 +209,11 @@ function scoreGeographyAffinity(geo, hq) {
 
   if (geo.isUS) {
     score += 6;
-    reasons.push("US HQ fits Motive venture mandate (~44% of venture portfolio).");
+    reasons.push(`US HQ fits Motive venture mandate (~${US_SHARE}% of venture portfolio).`);
   }
   if (geo.isEurope) {
     score += 6;
-    reasons.push("Europe HQ fits Motive venture mandate (~56% of venture portfolio).");
+    reasons.push(`Europe HQ fits Motive venture mandate (~${EU_SHARE}% of venture portfolio).`);
   }
 
   if (geo.hub) {
@@ -740,7 +745,7 @@ function triageCompanies(rows) {
       shortlisted: shortlisted.length,
       filteredOut: filteredOut.length,
       priorityReview: shortlisted.filter((r) => r.tier === "Priority Review").length,
-      scoringProfile: "Motive venture portfolio-calibrated (n=41)",
+      scoringProfile: `Motive venture portfolio-calibrated (n=${PORTFOLIO_N})`,
       generatedAt: new Date().toISOString(),
     },
     shortlisted,

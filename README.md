@@ -28,7 +28,7 @@ Case study deliverable: a working, explainable triage prototype + written memos.
 ## How the tool works
 
 1. **Strict mandate gates** — Pre-Seed–Series A, US/Europe, core fintech only (non-fintech filtered with reasons).
-2. **Portfolio-calibrated scoring** — weights derived from 41 Motive venture investments (sector mix, geography, company age, hub cities).
+2. **Portfolio-calibrated scoring** — weights derived from 38 Motive venture portfolio companies (sector mix, geography, company age, hub cities). 41 total Venture entries on motivepartners.com/portfolio; corpus uses 38 (see Process Memo).
 3. **Thesis similarity** — TF-IDF cosine vs Motive venture thesis + portfolio references.
 4. **Tiers** — Priority Review / Standard Review / Low Priority with explainable component scores.
 

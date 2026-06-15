@@ -1,6 +1,7 @@
 /**
  * Motive Partners venture mandate + portfolio-calibrated scoring profile.
- * Venture portfolio analytics derived from motivepartners.com/portfolio (Venture filter, n=41).
+ * Venture portfolio analytics derived from motivepartners.com/portfolio (Venture filter).
+ * As of June 2026: 41 total Venture entries on site; 38 in similarity corpus (3 realized exits excluded).
  */
 const MOTIVE_MANDATE = {
   stages: ["pre-seed", "seed", "series a"],
@@ -35,23 +36,28 @@ const MOTIVE_MANDATE = {
 };
 
 /**
- * Observed venture portfolio mix (41 investments, 2021–2026).
- * Used to calibrate sector priority weights — not a hard allocation target.
+ * Observed venture portfolio mix (38 companies in similarity corpus, June 2026).
+ * Source: motivepartners.com/portfolio · Venture strategy filter.
+ * Total Venture on site = 41 (includes 4 realized); corpus excludes 3 realized (Corastone, Februar, Vitera).
  */
 const MOTIVE_PORTFOLIO_ANALYTICS = {
   source: "motivepartners.com/portfolio · Venture strategy",
-  sampleSize: 41,
+  sampleSize: 38,
+  totalVentureOnSite: 41,
+  activeVentureOnSite: 37,
+  realizedVentureExcluded: ["Corastone", "Februar", "Vitera"],
+  realizedVentureOnSite: ["AMP", "Corastone", "Februar", "Vitera"],
   sectorMix: {
     wealth_asset_management: 0.34,
     banking_payments: 0.32,
-    ai_data_analytics: 0.15,
-    capital_markets: 0.1,
-    insurance: 0.07,
-    business_services: 0.02,
+    ai_data_analytics: 0.16,
+    capital_markets: 0.11,
+    insurance: 0.05,
+    business_services: 0.03,
   },
   geographyMix: {
-    united_states: 0.44,
-    europe: 0.56,
+    united_states: 0.42,
+    europe: 0.58,
   },
   hubCities: [
     "new york",
@@ -99,7 +105,7 @@ const MOTIVE_SECTOR_TAXONOMY = [
   {
     key: "ai_data_analytics",
     label: "AI, data & analytics",
-    portfolioWeight: 0.15,
+    portfolioWeight: 0.16,
     patterns: [
       /\bai\b|analytics|data platform|automation|agent|llm|machine learning|fraud|compliance monitoring|financial infrastructure/i,
     ],
@@ -107,7 +113,7 @@ const MOTIVE_SECTOR_TAXONOMY = [
   {
     key: "capital_markets",
     label: "Capital markets",
-    portfolioWeight: 0.1,
+    portfolioWeight: 0.11,
     patterns: [
       /capital market|trading|custody|syndication|derivatives|securities|defi|digital asset|tokenized|settlement/i,
     ],
@@ -115,13 +121,13 @@ const MOTIVE_SECTOR_TAXONOMY = [
   {
     key: "insurance",
     label: "Insurance",
-    portfolioWeight: 0.07,
+    portfolioWeight: 0.05,
     patterns: [/insurance|insurtech|underwriting|claims|parametric|actuar/i],
   },
   {
     key: "business_services",
     label: "Fintech business services",
-    portfolioWeight: 0.02,
+    portfolioWeight: 0.03,
     patterns: [
       /regtech|compliance reporting|legal technology|workflow automation|bsa|aml|sar|exam preparation/i,
     ],
@@ -187,6 +193,7 @@ const MOTIVE_VENTURE_PORTFOLIO = [
   { name: "LawX", subsector: "business services legal workflow automation financial institutions", location: "Berlin Germany", sectorKey: "business_services" },
   { name: "Luca", subsector: "banking payments SMB accounting payments europe", location: "Berlin Germany", sectorKey: "banking_payments" },
   { name: "Monnai", subsector: "AI data analytics identity verification fintech onboarding", location: "Los Angeles CA United States", sectorKey: "ai_data_analytics" },
+  { name: "MYNE Homes", subsector: "wealth asset management real estate investing fractional ownership", location: "Berlin Germany", sectorKey: "wealth_asset_management" },
   { name: "Navro", subsector: "banking payments cross border treasury FX", location: "London United Kingdom", sectorKey: "banking_payments" },
   { name: "Nelly", subsector: "banking payments healthcare patient financing", location: "Berlin Germany", sectorKey: "banking_payments" },
   { name: "Novata", subsector: "wealth asset management private markets ESG data", location: "New York City NY United States", sectorKey: "wealth_asset_management" },
