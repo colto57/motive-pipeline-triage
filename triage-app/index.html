@@ -26,12 +26,19 @@
         </div>
         <div class="hero-card">
           <div class="upload-zone" id="uploadZone">
-            <input type="file" id="csvInput" accept=".csv,text/csv,text/plain" hidden />
+            <input
+              type="file"
+              id="csvInput"
+              class="file-input-offscreen"
+              accept=".csv,text/csv,text/plain,application/vnd.ms-excel"
+              tabindex="-1"
+              aria-hidden="true"
+            />
             <div class="upload-icon">↑</div>
             <p class="upload-title">Drop CSV here or choose a file</p>
             <p class="upload-sub">Uses the provided inbound pipeline format</p>
             <div class="upload-actions">
-              <label for="csvInput" class="btn" id="uploadBtn">Choose CSV file</label>
+              <button type="button" class="btn" id="uploadBtn">Choose CSV file</button>
               <button type="button" class="btn secondary" id="demoBtn">Run demo on sample data</button>
             </div>
           </div>
