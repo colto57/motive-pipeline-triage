@@ -252,3 +252,7 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
+
+if (window.SAMPLE_INBOUND_CSV) {
+  runTriage(window.SAMPLE_INBOUND_CSV);
+}
