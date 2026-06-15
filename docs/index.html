@@ -26,12 +26,16 @@
         </div>
         <div class="hero-card">
           <div class="upload-zone" id="uploadZone">
-            <input type="file" id="csvInput" accept=".csv,text/csv" hidden />
+            <input type="file" id="csvInput" accept=".csv,text/csv,text/plain" hidden />
             <div class="upload-icon">↑</div>
-            <p class="upload-title">Drop CSV here or click to upload</p>
+            <p class="upload-title">Drop CSV here or choose a file</p>
             <p class="upload-sub">Uses the provided inbound pipeline format</p>
-            <button type="button" class="btn secondary" id="demoBtn">Run demo on sample data</button>
+            <div class="upload-actions">
+              <label for="csvInput" class="btn" id="uploadBtn">Choose CSV file</label>
+              <button type="button" class="btn secondary" id="demoBtn">Run demo on sample data</button>
+            </div>
           </div>
+          <p class="status-banner hidden" id="statusBanner" role="status" aria-live="polite"></p>
         </div>
       </header>
 

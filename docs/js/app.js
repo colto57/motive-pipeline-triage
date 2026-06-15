@@ -4,6 +4,7 @@ const uploadZone = document.getElementById("uploadZone");
 const csvInput = document.getElementById("csvInput");
 const demoBtn = document.getElementById("demoBtn");
 const exportBtn = document.getElementById("exportBtn");
+const statusBanner = document.getElementById("statusBanner");
 
 const statsSection = document.getElementById("statsSection");
 const resultsSection = document.getElementById("resultsSection");
@@ -28,10 +29,15 @@ const COMPONENT_LABELS = {
   stageFit: "Stage fit",
 };
 
-uploadZone.addEventListener("click", () => csvInput.click());
+uploadZone.addEventListener("click", (event) => {
+  if (event.target.closest("label, button, input")) return;
+  csvInput.click();
+});
+
 csvInput.addEventListener("change", (event) => {
   const file = event.target.files?.[0];
   if (file) handleFile(file);
+  event.target.value = "";
 });
 
 uploadZone.addEventListener("dragover", (event) => {
@@ -48,8 +54,9 @@ uploadZone.addEventListener("drop", (event) => {
   if (file) handleFile(file);
 });
 
-demoBtn.addEventListener("click", () => {
-  runTriage(window.SAMPLE_INBOUND_CSV);
+demoBtn.addEventListener("click", (event) => {
+  event.stopPropagation();
+  runTriage(window.SAMPLE_INBOUND_CSV, "Loaded sample pipeline (25 companies).");
 });
 
 exportBtn.addEventListener("click", () => {
@@ -59,14 +66,51 @@ exportBtn.addEventListener("click", () => {
 });
 
 async function handleFile(file) {
-  const text = await file.text();
-  runTriage(text);
+  setStatus(`Reading ${file.name}…`, "info");
+
+  if (!isCsvFile(file)) {
+    setStatus("Please upload a .csv file.", "error");
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    runTriage(text, `Processed ${file.name} successfully.`);
+  } catch (error) {
+    setStatus(`Could not read file: ${error.message}`, "error");
+  }
 }
 
-function runTriage(csvText) {
-  const rows = parseCsv(csvText);
-  latestResults = triageCompanies(rows);
-  renderResults(latestResults);
+function isCsvFile(file) {
+  const name = file.name.toLowerCase();
+  return name.endsWith(".csv") || file.type === "text/csv" || file.type === "text/plain" || file.type === "application/vnd.ms-excel";
+}
+
+function setStatus(message, type = "info") {
+  statusBanner.textContent = message;
+  statusBanner.classList.remove("hidden", "error", "success");
+  if (type === "error") statusBanner.classList.add("error");
+  if (type === "success") statusBanner.classList.add("success");
+}
+
+function runTriage(csvText, successMessage = "") {
+  try {
+    const rows = parseCsv(csvText);
+    if (!rows.length) {
+      setStatus("CSV loaded but no company rows were found.", "error");
+      return;
+    }
+
+    latestResults = triageCompanies(rows);
+    renderResults(latestResults);
+    setStatus(
+      successMessage ||
+        `Processed ${rows.length} companies · ${latestResults.summary.shortlisted} in mandate · ${latestResults.summary.priorityReview} priority review.`,
+      "success"
+    );
+  } catch (error) {
+    setStatus(`Could not parse CSV: ${error.message}`, "error");
+  }
 }
 
 function renderResults(results) {
@@ -254,5 +298,5 @@ function escapeHtml(value) {
 }
 
 if (window.SAMPLE_INBOUND_CSV) {
-  runTriage(window.SAMPLE_INBOUND_CSV);
+  runTriage(window.SAMPLE_INBOUND_CSV, "Loaded sample pipeline (25 companies).");
 }
