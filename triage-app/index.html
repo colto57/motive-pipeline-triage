@@ -3,42 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Motive Partners · Pipeline Triage</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="css/styles.css?v=7" />
+    <title>Pipeline Triage · Motive Partners</title>
+    <link rel="stylesheet" href="css/styles.css?v=9" />
   </head>
   <body>
-    <nav class="site-nav" aria-label="Site navigation">
-      <div class="site-nav-inner">
-        <a class="brand" href="https://motivepartners.com" target="_blank" rel="noopener noreferrer">
-          <img class="brand-logo" src="assets/motive-logo.svg" alt="Motive Partners" width="154" height="12" />
-          <span class="brand-divider" aria-hidden="true"></span>
-          <span class="brand-subtitle">Pipeline Triage</span>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a href="https://motivepartners.com" class="brand" target="_blank" rel="noopener noreferrer" aria-label="Motive Partners">
+          <img src="assets/motive-logo.svg" alt="Motive Partners" class="brand-logo" width="154" height="12" />
         </a>
-        <span class="nav-tag">Venture · Case Study</span>
+        <div class="header-meta">
+          <span>Venture Pipeline</span>
+          <span class="header-divider">·</span>
+          <span class="header-product">Deal Triage</span>
+        </div>
       </div>
-    </nav>
+    </header>
 
     <div class="page">
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">AI-Assisted Deal Flow</p>
-          <h1>Inbound pipeline triage</h1>
+          <p class="eyebrow">Venture · Pre-Seed – Series A</p>
+          <h1>AI-assisted deal triage</h1>
           <p class="lede">
-            Upload inbound CSV submissions to filter against Motive's venture mandate and rank
-            the remainder with explainable scores grounded in thesis similarity to Motive's
-            venture portfolio.
+            Upload inbound CSV submissions to filter against Motive's venture mandate
+            (Pre-Seed – Series A · US/Europe · Fintech) and rank the remainder with
+            explainable scores calibrated to Motive's venture portfolio.
           </p>
-          <div class="mandate-pills">
-            <span class="pill"><strong>Pre-Seed – Series A</strong></span>
-            <span class="pill"><strong>US &amp; Europe</strong></span>
-            <span class="pill"><strong>Fintech</strong></span>
-          </div>
         </div>
         <div class="hero-card">
           <div class="upload-zone" id="uploadZone">
@@ -52,7 +43,7 @@
             />
             <div class="upload-icon">↑</div>
             <p class="upload-title">Drop CSV here or choose a file</p>
-            <p class="upload-sub">Accepts common column aliases · UTF-8 safe</p>
+            <p class="upload-sub">Accepts standard headers or common aliases (Company, Industry, Location…)</p>
             <div class="upload-actions">
               <button type="button" class="btn" id="uploadBtn">Choose CSV file</button>
               <button type="button" class="btn secondary" id="demoBtn">Run demo on sample data</button>
@@ -121,40 +112,34 @@
             <p>Three binary filters — all must pass: <strong>Pre-Seed – Series A</strong>, <strong>US or Europe HQ</strong>, and <strong>core fintech sector</strong>.</p>
           </article>
           <article>
-            <h3>2 · Portfolio-calibrated sector fit (19%)</h3>
+            <h3>2 · Portfolio sector fit</h3>
             <p>Sector weights mirror Motive's 38-company venture corpus: Wealth 34%, Banking/Payments 32%, AI/Data 16%.</p>
           </article>
           <article>
-            <h3>3 · Thesis similarity (17%)</h3>
+            <h3>3 · Thesis similarity</h3>
             <p>TF-IDF cosine similarity vs Motive thesis statements and 38 venture portfolio references.</p>
           </article>
           <article>
-            <h3>4 · Geography &amp; company age (6% each)</h3>
-            <p>Hub-city bonus for NYC, Berlin, London, SF. Company age scored against stage-typical windows.</p>
-          </article>
-          <article>
-            <h3>5 · Deal economics &amp; moat (6% each)</h3>
+            <h3>4 · Deal economics</h3>
             <p>Check size fit ($1–10M), capital efficiency, infrastructure moat, and vertical AI fit.</p>
           </article>
           <article>
-            <h3>6 · Traction, founders, stage (13% / 11% / 4%)</h3>
-            <p>ARR/GMV/growth parsing, tier-1 fintech founder signals, and stage fit within mandate.</p>
+            <h3>5 · Geography &amp; age</h3>
+            <p>Hub-city bonus (NYC, Berlin, London, SF). Company age scored against stage-typical windows.</p>
           </article>
           <article>
-            <h3>7 · CSV upload</h3>
-            <p>Accepts common header aliases. UTF-8 BOM safe. Column-mapping UI for non-standard headers.</p>
-          </article>
-          <article>
-            <h3>8 · Output tiers</h3>
-            <p>≥76 Priority Review · 60–75 Standard Review · &lt;60 Low Priority.</p>
+            <h3>6 · Output tiers</h3>
+            <p>≥76 Priority Review · 60–75 Standard Review · &lt;60 Low Priority. Every result includes reasons.</p>
           </article>
         </div>
       </section>
     </div>
 
     <footer class="site-footer">
-      <p class="footer-text">Built for the Motive Partners venture analyst case study · Portfolio-calibrated triage prototype</p>
-      <a class="footer-link" href="https://motivepartners.com" target="_blank" rel="noopener noreferrer">motivepartners.com</a>
+      <p>
+        Built for Motive Partners case study ·
+        <a href="https://motivepartners.com" target="_blank" rel="noopener noreferrer">motivepartners.com</a>
+      </p>
     </footer>
 
     <template id="companyCardTemplate">
@@ -178,9 +163,9 @@
       </article>
     </template>
 
-    <script src="js/motive_reference.js?v=7"></script>
-    <script src="js/triage_engine.js?v=7"></script>
-    <script src="js/sample_data.js?v=7"></script>
-    <script src="js/app.js?v=7"></script>
+    <script src="js/motive_reference.js?v=9"></script>
+    <script src="js/triage_engine.js?v=9"></script>
+    <script src="js/sample_data.js?v=9"></script>
+    <script src="js/app.js?v=9"></script>
   </body>
 </html>

@@ -13,7 +13,12 @@ const {
   classifyCompanySector,
 } = window.MotiveReference || {};
 
-const PORTFOLIO_N = MOTIVE_PORTFOLIO_ANALYTICS?.sampleSize || MOTIVE_VENTURE_PORTFOLIO.length;
+const PORTFOLIO_N =
+  MOTIVE_PORTFOLIO_ANALYTICS?.sampleSize ||
+  (MOTIVE_VENTURE_PORTFOLIO && MOTIVE_VENTURE_PORTFOLIO.length) ||
+  38;
+const VENTURE_PORTFOLIO = MOTIVE_VENTURE_PORTFOLIO || [];
+const SECTOR_TAXONOMY = MOTIVE_SECTOR_TAXONOMY || [];
 const US_SHARE = Math.round((MOTIVE_PORTFOLIO_ANALYTICS?.geographyMix?.united_states || 0.42) * 100);
 const EU_SHARE = Math.round((MOTIVE_PORTFOLIO_ANALYTICS?.geographyMix?.europe || 0.58) * 100);
 
@@ -62,12 +67,12 @@ function parseGeography(hq) {
     /\b(u\.s\.|usa)\b/.test(text) ||
     /,\s*(al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy)\b/.test(text);
 
-  const isEurope = MOTIVE_MANDATE.geographies.europe.some((token) => {
+  const isEurope = (MOTIVE_MANDATE?.geographies?.europe || []).some((token) => {
     if (token.length <= 2) return text.includes(`, ${token}`) || text.endsWith(` ${token}`);
     return text.includes(token);
   });
 
-  const hubMatch = window.MotiveReference.MOTIVE_PORTFOLIO_ANALYTICS.hubCities.find((city) =>
+  const hubMatch = (MOTIVE_PORTFOLIO_ANALYTICS?.hubCities || []).find((city) =>
     text.includes(city)
   );
 
@@ -230,7 +235,7 @@ function scoreGeographyAffinity(geo, hq) {
 
 function scoreCompanyAge(row, stage) {
   const foundingYear = parseInt(row.founding_year, 10);
-  const age = MOTIVE_MANDATE.currentYear - foundingYear;
+  const age = (MOTIVE_MANDATE?.currentYear || 2026) - foundingYear;
   const profile = COMPANY_AGE_BY_STAGE[stage] || COMPANY_AGE_BY_STAGE.seed;
   const reasons = [];
 
@@ -269,12 +274,12 @@ function scoreTraction(row) {
   const reasons = [];
 
   if (metrics.arr != null) {
-    if (metrics.arr >= 5_000_000) {
+    if (metrics.arr >= 5000000) {
       score += 35;
       reasons.push(
         `Material ARR (${row.pitch_summary.match(/\$[\d.]+\s*[mbk]\s*ARR/i)?.[0] || "disclosed"}).`
       );
-    } else if (metrics.arr >= 500_000) {
+    } else if (metrics.arr >= 500000) {
       score += 25;
       reasons.push(
         `Early credible ARR (${row.pitch_summary.match(/\$[\d.]+\s*[mbk]\s*ARR/i)?.[0] || "disclosed"}).`
@@ -285,7 +290,7 @@ function scoreTraction(row) {
     }
   }
 
-  if (metrics.gmv != null && metrics.gmv >= 100_000_000) {
+  if (metrics.gmv != null && metrics.gmv >= 100000000) {
     score += 28;
     reasons.push(`Large payments volume / GMV signal.`);
   }
@@ -363,7 +368,8 @@ function scoreStageFit(stage) {
 
 function scoreCheckSizeFit(row) {
   const metrics = parseMoney(row.pitch_summary);
-  const { min, max, label } = MOTIVE_MANDATE.checkSizeUsd;
+  const checkSize = MOTIVE_MANDATE?.checkSizeUsd || { min: 1000000, max: 10000000, label: "$1–10M lead/co-lead" };
+  const { min, max, label } = checkSize;
   const reasons = [];
 
   if (metrics.raise == null) {
@@ -374,7 +380,7 @@ function scoreCheckSizeFit(row) {
     };
   }
 
-  const raiseM = metrics.raise / 1_000_000;
+  const raiseM = metrics.raise / 1000000;
   let score = 50;
 
   if (metrics.raise >= min && metrics.raise <= max) {
@@ -407,32 +413,32 @@ function scoreCapitalEfficiency(row, stage) {
   const foundingYear = parseInt(row.founding_year, 10);
   const age = Number.isNaN(foundingYear)
     ? null
-    : Math.max(1, MOTIVE_MANDATE.currentYear - foundingYear);
+    : Math.max(1, (MOTIVE_MANDATE?.currentYear || 2026) - foundingYear);
   let score = 50;
   const reasons = [];
 
   const stageArrBenchmark = {
     "pre-seed": 0,
-    seed: 400_000,
-    "series a": 2_000_000,
+    seed: 400000,
+    "series a": 2000000,
   };
 
   if (metrics.arr != null && age != null) {
     const arrPerYear = metrics.arr / age;
-    if (arrPerYear >= 1_500_000) {
+    if (arrPerYear >= 1500000) {
       score += 28;
       reasons.push(
         `Strong capital efficiency: ~$${Math.round(arrPerYear / 1000)}k ARR per year since founding (${age} yrs).`
       );
-    } else if (arrPerYear >= 500_000) {
+    } else if (arrPerYear >= 500000) {
       score += 18;
       reasons.push(`Solid ARR velocity (~$${Math.round(arrPerYear / 1000)}k ARR/year since founding).`);
-    } else if (metrics.arr >= 100_000) {
+    } else if (metrics.arr >= 100000) {
       score += 8;
       reasons.push("Early ARR relative to company age — efficiency still unproven.");
     }
 
-    const benchmark = stageArrBenchmark[stage] ?? 400_000;
+    const benchmark = stageArrBenchmark[stage] ?? 400000;
     if (benchmark > 0 && metrics.arr >= benchmark) {
       score += 14;
       reasons.push(`ARR meets/exceeds typical ${stage} benchmark for Motive venture entry.`);
@@ -555,7 +561,7 @@ function scoreVerticalAiFit(row) {
 
 function findBestPortfolioMatch(companyVec, idf) {
   let best = { name: null, similarity: 0, subsector: "", sectorKey: "" };
-  for (const company of MOTIVE_VENTURE_PORTFOLIO) {
+  for (const company of VENTURE_PORTFOLIO) {
     const doc = `${company.name} ${company.subsector} ${company.location}`;
     const vec = tfidfVector(doc, idf);
     const sim = cosineSimilarity(companyVec, vec);
@@ -577,7 +583,7 @@ function applyMandateFilters(row) {
   const sectorClass = classifyCompanySector(row);
   const failures = [];
 
-  if (!MOTIVE_MANDATE.stages.includes(stage)) {
+  if (!(MOTIVE_MANDATE?.stages || []).includes(stage)) {
     failures.push({
       code: "stage",
       message: `Stage "${row.stage}" is outside Motive venture mandate (Pre-Seed – Series A). Route to growth/buyout team.`,
@@ -608,7 +614,7 @@ function applyMandateFilters(row) {
 }
 
 function triageCompanies(rows) {
-  const referenceCorpus = buildReferenceCorpus();
+  const referenceCorpus = buildReferenceCorpus ? buildReferenceCorpus() : [];
   const allDocs = [...referenceCorpus, ...rows.map(buildCompanyDocument)];
   const idf = computeIdf(allDocs);
 
@@ -674,11 +680,11 @@ function triageCompanies(rows) {
     const positiveReasons = [];
     if (mandate.passed) {
       positiveReasons.push(
-        `Thesis similarity ${thesisScore}/100 (TF-IDF cosine vs ${MOTIVE_VENTURE_PORTFOLIO.length} Motive venture investments).`
+        `Thesis similarity ${thesisScore}/100 (TF-IDF cosine vs ${PORTFOLIO_N} Motive venture investments).`
       );
       if (portfolioMatch.similarity >= 0.08) {
         const sectorLabel =
-          MOTIVE_SECTOR_TAXONOMY.find((s) => s.key === portfolioMatch.sectorKey)?.label ||
+          SECTOR_TAXONOMY.find((s) => s.key === portfolioMatch.sectorKey)?.label ||
           portfolioMatch.sectorKey;
         positiveReasons.push(
           `Closest portfolio comp: ${portfolioMatch.name} (${sectorLabel}).`

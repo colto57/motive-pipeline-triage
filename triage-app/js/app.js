@@ -53,10 +53,20 @@
     const CSV_FIELD_DEFINITIONS = window.TriageEngine?.CSV_FIELD_DEFINITIONS || {};
     const CSV_REQUIRED_FIELDS = window.TriageEngine?.CSV_REQUIRED_FIELDS || [];
 
+    function setStatus(message, type = "info") {
+      if (!statusBanner) return;
+      statusBanner.textContent = message;
+      statusBanner.classList.remove("hidden", "error", "success");
+      if (type === "error") statusBanner.classList.add("error");
+      if (type === "success") statusBanner.classList.add("success");
+    }
+
     if (!engineReady) {
       showFatalError(
-        "Scoring engine did not load. You can still pick a file, but hard-refresh (Ctrl+F5) if processing fails."
+        "Scoring engine failed to load. Hard-refresh (Ctrl+Shift+R). If this persists, try Chrome/Edge."
       );
+    } else {
+      setStatus("Ready — choose a CSV file or drop one in the upload area.", "success");
     }
 
     let latestResults = null;
@@ -77,17 +87,9 @@
       verticalAiFit: "Vertical AI fit",
     };
 
-    function setStatus(message, type = "info") {
-      if (!statusBanner) return;
-      statusBanner.textContent = message;
-      statusBanner.classList.remove("hidden", "error", "success");
-      if (type === "error") statusBanner.classList.add("error");
-      if (type === "success") statusBanner.classList.add("success");
-    }
-
     function requireEngine() {
       if (engineReady && analyzeCsv && triageCompanies) return true;
-      setStatus("Scoring engine not loaded. Hard-refresh the page (Ctrl+F5) and try again.", "error");
+      setStatus("Scoring engine not loaded. Hard-refresh (Ctrl+Shift+R) and try again.", "error");
       return false;
     }
 
@@ -472,10 +474,10 @@
 
     function escapeHtml(value) {
       return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;");
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
     }
 
     if (engineReady && window.SAMPLE_INBOUND_CSV) {

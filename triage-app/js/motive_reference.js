@@ -31,7 +31,7 @@ const MOTIVE_MANDATE = {
       "eu",
     ],
   },
-  checkSizeUsd: { min: 1_000_000, max: 10_000_000, label: "$1–10M lead/co-lead" },
+  checkSizeUsd: { min: 1000000, max: 10000000, label: "$1–10M lead/co-lead" },
   currentYear: 2026,
 };
 
