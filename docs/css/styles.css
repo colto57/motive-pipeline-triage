@@ -420,6 +420,17 @@ h1 {
   font-size: 0.9rem;
 }
 
+.company-sub a,
+.reasons a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.company-sub a:hover,
+.reasons a:hover {
+  text-decoration: underline;
+}
+
 .score-block {
   text-align: right;
   min-width: 72px;

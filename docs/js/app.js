@@ -306,7 +306,14 @@
       );
 
       node.querySelector(".company-name").textContent = company.company_name;
-      node.querySelector(".company-sub").textContent = `${company.stage} · ${company.sector} · ${company.hq_geography}`;
+
+      const subParts = [`${company.stage} · ${company.sector} · ${company.hq_geography}`];
+      if (company.safeWebsiteUrl) {
+        subParts.push(
+          `<a href="${escapeHtml(company.safeWebsiteUrl)}" target="_blank" rel="noopener noreferrer" class="company-link">View company ↗</a>`
+        );
+      }
+      node.querySelector(".company-sub").innerHTML = subParts.join(" · ");
 
       node.querySelector(".score-value").textContent = filtered
         ? "-"
@@ -333,11 +340,11 @@
         const cautions = company.cautionReasons.slice(0, 3);
         reasons.innerHTML = `
           <h4>Why this ranked here</h4>
-          <ul>${positives.map((r) => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
+          <ul>${positives.map((r) => `<li>${renderReason(r, company.safeWebsiteUrl)}</li>`).join("")}</ul>
           ${
             cautions.length
               ? `<div class="caution"><h4>Caution flags</h4><ul>${cautions
-                  .map((r) => `<li>${escapeHtml(r)}</li>`)
+                  .map((r) => `<li>${renderReason(r, company.safeWebsiteUrl)}</li>`)
                   .join("")}</ul></div>`
               : ""
           }
@@ -409,7 +416,12 @@
             row.componentScores.infrastructureMoat,
             row.componentScores.verticalAiFit,
             csvCell(row.primarySector || ""),
-            csvCell(row.positiveReasons.slice(0, 3).join(" | ")),
+            csvCell(
+              row.positiveReasons
+                .slice(0, 3)
+                .map((r) => reasonToText(r))
+                .join(" | ")
+            ),
             csvCell(""),
           ].join(",")
         );
@@ -461,6 +473,39 @@
       link.download = filename;
       link.click();
       URL.revokeObjectURL(url);
+    }
+
+    function reasonToText(reason) {
+      if (!reason) return "";
+      return typeof reason === "string" ? reason : reason.text || "";
+    }
+
+    function isTrustedLink(href, companyWebsite) {
+      if (!href) return false;
+      if (href.startsWith("#")) return true;
+      try {
+        const url = new URL(href);
+        const host = url.hostname.toLowerCase();
+        if (host === "motivepartners.com" || host.endsWith(".motivepartners.com")) return true;
+        if (companyWebsite) {
+          const companyHost = new URL(companyWebsite).hostname.toLowerCase();
+          return host === companyHost;
+        }
+      } catch {
+        return false;
+      }
+      return false;
+    }
+
+    function renderReason(reason, companyWebsite) {
+      if (typeof reason === "string") return escapeHtml(reason);
+      const text = escapeHtml(reason.text || "");
+      if (reason.href && isTrustedLink(reason.href, companyWebsite)) {
+        const href = escapeHtml(reason.href);
+        const label = escapeHtml(reason.label || "source");
+        return `${text} (<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>)`;
+      }
+      return text;
     }
 
     function escapeHtml(value) {

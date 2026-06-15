@@ -752,7 +752,7 @@ function applyScoreSpread(raw) {
 
 function compareShortlistResults(a, b) {
   const scoreDelta = b.overallScore - a.overallScore;
-  if (Math.abs(scoreDelta) >= 1) return scoreDelta;
+  if (scoreDelta !== 0) return scoreDelta;
 
   const tractionDelta = b.componentScores.traction - a.componentScores.traction;
   if (tractionDelta !== 0) return tractionDelta;
@@ -797,6 +797,394 @@ function applyMandateFilters(row) {
     geo,
     sectorClass,
   };
+}
+
+const SOURCE_LINKS = {
+  portfolio: { href: "https://motivepartners.com/portfolio", label: "Motive portfolio" },
+  motive: { href: "https://motivepartners.com", label: "Motive Partners" },
+  thesisMethod: { href: "#thesis-similarity", label: "methodology" },
+  mandateCheck: { href: "#deal-economics", label: "check size mandate" },
+  sectorMethod: { href: "#portfolio-sector-fit", label: "sector weighting" },
+  mandateGates: { href: "#mandate-gates", label: "mandate gates" },
+};
+
+function mkReason(text, linkKey = null) {
+  const reason = { text };
+  if (linkKey && SOURCE_LINKS[linkKey]) {
+    reason.href = SOURCE_LINKS[linkKey].href;
+    reason.label = SOURCE_LINKS[linkKey].label;
+  }
+  return reason;
+}
+
+function companyHash(name) {
+  let h = 0;
+  for (let i = 0; i < (name || "").length; i++) {
+    h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+function pickTemplate(templates, seed) {
+  return templates[seed % templates.length];
+}
+
+function sanitizeWebsiteUrl(raw) {
+  if (!raw) return null;
+  let url = String(raw).trim();
+  if (!url) return null;
+  if (!/^https?:\/\//i.test(url)) {
+    url = `https://${url.replace(/^\/\//, "")}`;
+  }
+  try {
+    const parsed = new URL(url);
+    if (!["http:", "https:"].includes(parsed.protocol)) return null;
+    const host = parsed.hostname.toLowerCase();
+    if (/^(localhost|127\.|0\.0\.0\.0)/.test(host)) return null;
+    if (/javascript:|data:|vbscript:/i.test(url)) return null;
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
+function extractFounderSnippet(founderBg) {
+  if (!founderBg) return null;
+  const tier1 = founderBg.match(new RegExp(TIER1_COMPANIES.source, "gi"));
+  if (tier1?.length) return tier1.slice(0, 2).join(" and ");
+  return founderBg.split(";")[0].trim().slice(0, 72);
+}
+
+function getSectorCompNames(sectorKey, excludeName) {
+  return VENTURE_PORTFOLIO.filter((c) => c.sectorKey === sectorKey && c.name !== excludeName)
+    .slice(0, 2)
+    .map((c) => c.name)
+    .join(", ");
+}
+
+function buildHighlightReasons(ctx) {
+  const {
+    row,
+    componentScores,
+    thesisScore,
+    portfolioMatch,
+    sectorFit,
+    traction,
+    founders,
+    verticalAi,
+    checkSize,
+    mandate,
+  } = ctx;
+  const metrics = traction.metrics;
+  const h = companyHash(row.company_name);
+  const candidates = [];
+
+  if (componentScores.traction >= 55 && metrics) {
+    if (metrics.arr >= 1000000) {
+      const arrLabel =
+        row.pitch_summary.match(/\$[\d.]+\s*[mbk]\s*ARR/i)?.[0] ||
+        `$${(metrics.arr / 1000000).toFixed(1)}M ARR`;
+      const growth = metrics.growthLabel ? `, ${metrics.growthLabel}` : "";
+      candidates.push({
+        priority: componentScores.traction + 8,
+        reason: mkReason(
+          pickTemplate(
+            [
+              `${arrLabel}${growth} - meaningful revenue at ${row.stage} stage.`,
+              `Already at ${arrLabel}${growth}, ahead of typical ${row.stage} benchmarks.`,
+              `Revenue profile stands out: ${arrLabel}${growth}.`,
+            ],
+            h
+          )
+        ),
+      });
+    } else if (metrics.gmv >= 100000000) {
+      candidates.push({
+        priority: componentScores.traction + 6,
+        reason: mkReason(
+          `Large payments volume signal in pitch - mirrors Motive infra bets like forage-class platforms.`,
+          "portfolio"
+        ),
+      });
+    } else if (metrics.designPartners) {
+      candidates.push({
+        priority: componentScores.traction + 5,
+        reason: mkReason(
+          `Signed tier-1 bank or institutional design partners - a pattern across Motive's infrastructure portfolio.`,
+          "portfolio"
+        ),
+      });
+    } else if (metrics.customers) {
+      candidates.push({
+        priority: componentScores.traction,
+        reason: mkReason(`Early customer traction: ${metrics.customers}.`),
+      });
+    }
+  }
+
+  if (componentScores.founderSignal >= 60) {
+    const snippet = extractFounderSnippet(row.founder_background);
+    if (SERIAL_FOUNDER.test(row.founder_background || "")) {
+      candidates.push({
+        priority: componentScores.founderSignal + 6,
+        reason: mkReason(
+          pickTemplate(
+            [
+              `Serial founder${snippet ? ` (${snippet})` : ""} - repeat operator profile Motive often backs.`,
+              `${snippet || "Founding team"} brings a prior exit and domain depth worth prioritizing.`,
+            ],
+            h + 1
+          ),
+          "portfolio"
+        ),
+      });
+    } else if (TIER1_COMPANIES.test(row.founder_background || "")) {
+      candidates.push({
+        priority: componentScores.founderSignal + 4,
+        reason: mkReason(
+          `Team draws from ${snippet || "tier-1 fintech operators"} - strong credibility for a first diligence call.`
+        ),
+      });
+    } else if (componentScores.founderSignal >= 70) {
+      candidates.push({
+        priority: componentScores.founderSignal,
+        reason: mkReason(`Founder background shows senior financial-services operator experience.`),
+      });
+    }
+  }
+
+  if (sectorFit.classification.sectorClass === "core" && componentScores.portfolioSectorFit >= 55) {
+    const primary = sectorFit.primarySector;
+    const primaryLabel = primary?.label || row.sector;
+    const weight = primary?.portfolioWeight || 0;
+    const comps = primary?.sectorKey
+      ? getSectorCompNames(primary.sectorKey, portfolioMatch?.name)
+      : "";
+
+    if (weight >= 0.25) {
+      const pctNote = weight >= 0.3 ? ` (${Math.round(weight * 100)}% of venture portfolio)` : "";
+      candidates.push({
+        priority: componentScores.portfolioSectorFit + 5,
+        reason: mkReason(
+          pickTemplate(
+            [
+              `Strong fit with Motive's ${primaryLabel} portfolio${comps ? ` (${comps})` : ""}.`,
+              `Sits in ${primaryLabel}${pctNote} - one of Motive's densest venture clusters.`,
+              `Core ${primaryLabel} positioning${comps ? ` alongside bets like ${comps}` : ""}.`,
+            ],
+            h + 2
+          ),
+          weight >= 0.3 ? "portfolio" : "sectorMethod"
+        ),
+      });
+    } else {
+      candidates.push({
+        priority: componentScores.portfolioSectorFit,
+        reason: mkReason(`Core fintech positioning in ${primaryLabel}.`, "sectorMethod"),
+      });
+    }
+
+    if (sectorFit.classification.matches?.length > 1) {
+      candidates.push({
+        priority: componentScores.portfolioSectorFit - 2,
+        reason: mkReason(
+          `Spans ${sectorFit.classification.matches.map((m) => m.label).join(" and ")} - multi-vertical fintech thesis.`
+        ),
+      });
+    }
+  }
+
+  if (portfolioMatch?.similarity >= 0.08) {
+    const sectorLabel =
+      SECTOR_TAXONOMY.find((s) => s.key === portfolioMatch.sectorKey)?.label ||
+      portfolioMatch.subsector;
+    candidates.push({
+      priority: 52 + portfolioMatch.similarity * 180,
+      reason: mkReason(
+        pickTemplate(
+          [
+            `Closest Motive comp: ${portfolioMatch.name} (${sectorLabel}) - similar problem space.`,
+            `Reads like a ${portfolioMatch.name}-adjacent bet in ${sectorLabel}.`,
+            `Portfolio analogue: ${portfolioMatch.name}, another Motive ${sectorLabel} investment.`,
+          ],
+          h + 3
+        ),
+        "portfolio"
+      ),
+    });
+  }
+
+  if (thesisScore >= 40) {
+    candidates.push({
+      priority: componentScores.thesisSimilarity * 0.75,
+      reason: mkReason(
+        pickTemplate(
+          [
+            `Pitch language aligns with Motive's venture thesis (${thesisScore}/100 similarity).`,
+            `Thesis match: ${thesisScore}/100 vs ${PORTFOLIO_N} Motive venture investments.`,
+            `Positioning scores ${thesisScore}/100 against Motive's investment corpus.`,
+          ],
+          h + 4
+        ),
+        "thesisMethod"
+      ),
+    });
+  }
+
+  if (componentScores.verticalAiFit >= 75) {
+    candidates.push({
+      priority: componentScores.verticalAiFit,
+      reason: mkReason(
+        pickTemplate(
+          [
+            `Vertical AI on financial workflows - a core 2024-2026 Motive venture theme.`,
+            `AI-native automation for regulated financial ops fits Motive's recent investment pattern.`,
+          ],
+          h + 5
+        ),
+        "portfolio"
+      ),
+    });
+  }
+
+  if (mandate.geo?.hub && TOP_HUB_CITIES.has(mandate.geo.hub)) {
+    const hubLabel = mandate.geo.hub.replace(/\b\w/g, (c) => c.toUpperCase());
+    candidates.push({
+      priority: componentScores.geographyAffinity,
+      reason: mkReason(`${hubLabel} HQ - a top Motive venture hub alongside NYC, London, and Berlin.`),
+    });
+  }
+
+  if (componentScores.checkSizeFit >= 85 && checkSize.metrics?.raise) {
+    const raiseM = checkSize.metrics.raise / 1000000;
+    candidates.push({
+      priority: componentScores.checkSizeFit,
+      reason: mkReason(
+        `Raising ~$${raiseM.toFixed(1)}M fits Motive's $1-10M lead/co-lead check size.`,
+        "mandateCheck"
+      ),
+    });
+  }
+
+  if (componentScores.infrastructureMoat >= 70) {
+    const moatHit = infraMoatReason(ctx);
+    if (moatHit) {
+      candidates.push({
+        priority: componentScores.infrastructureMoat - 5,
+        reason: mkReason(moatHit),
+      });
+    }
+  }
+
+  candidates.sort((a, b) => b.priority - a.priority);
+
+  const seen = new Set();
+  const highlights = [];
+  for (const candidate of candidates) {
+    const key = candidate.reason.text.slice(0, 48);
+    if (!seen.has(key)) {
+      seen.add(key);
+      highlights.push(candidate.reason);
+    }
+    if (highlights.length >= 5) break;
+  }
+
+  return highlights;
+}
+
+function infraMoatReason(ctx) {
+  const text = `${ctx.row.sector} ${ctx.row.pitch_summary}`;
+  if (/api|platform|infrastructure|embedded/i.test(text)) {
+    return "Platform or API infrastructure wedge - consistent with Motive's B2B fintech portfolio.";
+  }
+  if (/bank partner|design partner|regulated|compliance/i.test(text)) {
+    return "Regulated-institution integration path - common across Motive infrastructure bets.";
+  }
+  return null;
+}
+
+function buildCautionReasons(ctx) {
+  const { row, sectorFit, checkSize, capitalEff, infraMoat, verticalAi, traction, ageFit, geoFit } =
+    ctx;
+  const cautions = [];
+
+  if (sectorFit.classification.sectorClass === "adjacent") {
+    cautions.push(
+      mkReason(
+        `Adjacent sector (${sectorFit.classification.adjacentLabel}) - lower priority than core fintech in Motive's venture book.`,
+        "portfolio"
+      )
+    );
+  } else if (sectorFit.classification.sectorClass === "weak") {
+    cautions.push(mkReason(`Weak fintech signal - may sit outside Motive's core venture thesis.`, "portfolio"));
+  }
+
+  if (checkSize.reasons.some((r) => r.includes("not disclosed"))) {
+    cautions.push(
+      mkReason(
+        `Raise size not stated in pitch - confirm fit against Motive's $1-10M mandate.`,
+        "mandateCheck"
+      )
+    );
+  } else {
+    const raiseFlag = checkSize.reasons.find(
+      (r) => r.includes("above") || r.includes("growth") || r.includes("exceeds")
+    );
+    if (raiseFlag) cautions.push(mkReason(raiseFlag, "mandateCheck"));
+  }
+
+  if (/first[- ]time founders?/i.test(row.founder_background || "")) {
+    cautions.push(mkReason(`First-time founding team - plan deeper reference and operator diligence.`));
+  }
+
+  if (traction.metrics?.preRevenue && !traction.metrics?.designPartners && !traction.metrics?.arr) {
+    cautions.push(
+      mkReason(`Pre-revenue with no institutional pilots - higher conviction bar for Motive venture.`)
+    );
+  } else if (traction.reasons.some((r) => r.includes("Modest ARR"))) {
+    cautions.push(mkReason(`Modest ARR - traction still forming for venture-scale prioritization.`));
+  }
+
+  if (verticalAi.score < 55 && /\bai\b/i.test(row.pitch_summary || "")) {
+    cautions.push(
+      mkReason(`AI positioning feels generic - validate depth vs. financial workflow automation.`)
+    );
+  }
+
+  if (infraMoat.reasons.some((r) => r.includes("B2C"))) {
+    cautions.push(
+      mkReason(
+        `B2C go-to-market - Motive's venture portfolio skews B2B financial infrastructure.`,
+        "portfolio"
+      )
+    );
+  }
+
+  if (ageFit.reasons.some((r) => r.includes("mature"))) {
+    cautions.push(mkReason(ageFit.reasons.find((r) => r.includes("mature"))));
+  }
+
+  if (geoFit.reasons.some((r) => r.includes("not a top"))) {
+    cautions.push(
+      mkReason(`HQ is in-mandate but outside Motive's densest hub cities (NYC, London, Berlin).`)
+    );
+  }
+
+  if (capitalEff.reasons.some((r) => r.includes("below typical"))) {
+    cautions.push(mkReason(capitalEff.reasons.find((r) => r.includes("below typical"))));
+  }
+
+  const seen = new Set();
+  const unique = [];
+  for (const caution of cautions) {
+    const key = caution.text.slice(0, 48);
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(caution);
+    }
+    if (unique.length >= 3) break;
+  }
+  return unique;
 }
 
 function triageCompanies(rows) {
@@ -868,42 +1256,26 @@ function triageCompanies(rows) {
       ? roundScore(Math.min(100, Math.max(0, applyScoreSpread(weightedRaw))))
       : 0;
 
-    const positiveReasons = [];
-    if (mandate.passed) {
-      positiveReasons.push(
-        `Thesis similarity ${thesisScore}/100 (TF-IDF cosine vs ${PORTFOLIO_N} Motive venture investments).`
-      );
-      if (portfolioMatch.similarity >= 0.08) {
-        const sectorLabel =
-          SECTOR_TAXONOMY.find((s) => s.key === portfolioMatch.sectorKey)?.label ||
-          portfolioMatch.sectorKey;
-        positiveReasons.push(
-          `Closest portfolio comp: ${portfolioMatch.name} (${sectorLabel}).`
-        );
-      }
-      positiveReasons.push(...sectorFit.reasons.filter((r) => sectorFit.classification.sectorClass === "core"));
-      positiveReasons.push(...geoFit.reasons);
-      positiveReasons.push(...ageFit.reasons);
-      positiveReasons.push(...checkSize.reasons.filter((r) => !r.includes("not disclosed") && !r.includes("above Motive") && !r.includes("growth")));
-      positiveReasons.push(...capitalEff.reasons.filter((r) => !r.includes("below typical") && !r.includes("Pre-revenue") && !r.includes("Insufficient")));
-      positiveReasons.push(...infraMoat.reasons.filter((r) => !r.includes("Limited") && !r.includes("B2C")));
-      positiveReasons.push(...verticalAi.reasons.filter((r) => !r.includes("Weak") && !r.includes("AI-washing") && !r.includes("not clearly")));
-      positiveReasons.push(...traction.reasons.filter((r) => !r.includes("Pre-revenue") && !r.includes("Limited")));
-      positiveReasons.push(...founders.reasons.filter((r) => !r.includes("First-time") && !r.includes("neutral")));
-      positiveReasons.push(...stageFit.reasons);
-    }
+    const reasonCtx = {
+      row,
+      componentScores,
+      thesisScore,
+      portfolioMatch,
+      sectorFit,
+      traction,
+      founders,
+      verticalAi,
+      checkSize,
+      capitalEff,
+      infraMoat,
+      ageFit,
+      geoFit,
+      mandate,
+    };
 
-    const cautionReasons = [
-      ...sectorFit.reasons.filter((r) => sectorFit.classification.sectorClass !== "core"),
-      ...checkSize.reasons.filter((r) => r.includes("not disclosed") || r.includes("above") || r.includes("growth")),
-      ...capitalEff.reasons.filter((r) => r.includes("below typical") || r.includes("Pre-revenue") || r.includes("Insufficient")),
-      ...infraMoat.reasons.filter((r) => r.includes("Limited") || r.includes("B2C")),
-      ...verticalAi.reasons.filter((r) => r.includes("Weak") || r.includes("AI-washing") || r.includes("generic") || r.includes("not clearly")),
-      ...traction.reasons.filter((r) => r.includes("Pre-revenue") || r.includes("Modest") || r.includes("Limited")),
-      ...founders.reasons.filter((r) => r.includes("First-time")),
-      ...ageFit.reasons.filter((r) => r.includes("mature") || r.includes("acceptable")),
-      ...geoFit.reasons.filter((r) => r.includes("not a top")),
-    ];
+    const positiveReasons = mandate.passed ? buildHighlightReasons(reasonCtx) : [];
+    const cautionReasons = mandate.passed ? buildCautionReasons(reasonCtx) : [];
+    const safeWebsiteUrl = sanitizeWebsiteUrl(row.website);
 
     let tier = "Filtered Out";
     if (mandate.passed) {
@@ -923,6 +1295,7 @@ function triageCompanies(rows) {
       portfolioMatch,
       primarySector: sectorFit.primarySector?.label || null,
       companyAge: ageFit.age,
+      safeWebsiteUrl,
       positiveReasons,
       cautionReasons,
       filterReasons: mandate.failures.map((f) => f.message),

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pipeline Triage · Motive Partners</title>
-    <link rel="stylesheet" href="css/styles.css?v=15" />
+    <link rel="stylesheet" href="css/styles.css?v=17" />
   </head>
   <body>
     <header class="site-header">
@@ -84,7 +84,7 @@
         <div class="panel-header">
           <div>
             <h2>Prioritized shortlist</h2>
-            <p class="panel-sub">Ranked by weighted score with component breakdown and rationale.</p>
+            <p class="panel-sub">Ranked by weighted overall score (component bars are for context only).</p>
           </div>
           <button type="button" class="btn" id="exportBtn">Export ranked CSV</button>
         </div>
@@ -101,27 +101,29 @@
         <div id="filteredCards" class="cards compact"></div>
       </section>
 
-      <section class="methodology">
+      <section class="methodology" id="methodology">
         <h2>How scoring works</h2>
         <p class="panel-sub methodology-intro">
-          Calibrated from 38 Motive venture portfolio companies on motivepartners.com (41 total Venture entries). Hard filters first; then portfolio-weighted ranking.
+          Calibrated from 38 Motive venture portfolio companies on
+          <a href="https://motivepartners.com/portfolio" target="_blank" rel="noopener noreferrer">motivepartners.com/portfolio</a>
+          (41 total Venture entries). Hard filters first; then portfolio-weighted ranking.
         </p>
         <div class="method-grid">
-          <article>
+          <article id="mandate-gates">
             <h3>1 · Strict mandate gates</h3>
             <p>Two hard mandate gates — both must pass: <strong>Pre-Seed – Series A</strong> and <strong>US or Europe HQ</strong>. Adjacent sectors (HR Tech, PropTech, etc.) stay in the shortlist but score lower.</p>
           </article>
-          <article>
+          <article id="portfolio-sector-fit">
             <h3>2 · Portfolio sector fit</h3>
-            <p>Sector weights mirror Motive's 38-company venture corpus: Wealth 34%, Banking/Payments 32%, AI/Data 16%.</p>
+            <p>Sector weights mirror Motive's 38-company venture corpus: Wealth 34%, Banking/Payments 32%, AI/Data 16%. Source: <a href="https://motivepartners.com/portfolio" target="_blank" rel="noopener noreferrer">Motive venture portfolio</a>.</p>
           </article>
-          <article>
+          <article id="thesis-similarity">
             <h3>3 · Thesis similarity</h3>
-            <p>TF-IDF cosine similarity vs Motive thesis statements and 38 venture portfolio references.</p>
+            <p>TF-IDF cosine similarity vs Motive thesis statements and 38 venture portfolio references. Raw cosine scores (typically 0.02–0.18) are rescaled to 0–100 for display (25 + cosine × 400).</p>
           </article>
-          <article>
+          <article id="deal-economics">
             <h3>4 · Deal economics</h3>
-            <p>Check size fit ($1–10M), capital efficiency, infrastructure moat, and vertical AI fit.</p>
+            <p>Check size fit ($1–10M per <a href="https://motivepartners.com" target="_blank" rel="noopener noreferrer">Motive Partners</a>), capital efficiency, infrastructure moat, and vertical AI fit.</p>
           </article>
           <article>
             <h3>5 · Geography &amp; age</h3>
@@ -166,7 +168,7 @@
       </article>
     </template>
 
-    <script src="js/engine.bundle.js?v=15"></script>
-    <script src="js/app.js?v=15"></script>
+    <script src="js/engine.bundle.js?v=17"></script>
+    <script src="js/app.js?v=17"></script>
   </body>
 </html>
