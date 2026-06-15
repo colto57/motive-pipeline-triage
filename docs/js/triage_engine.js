@@ -1,3 +1,7 @@
+if (!window.MotiveReference) {
+  console.error("motive_reference.js did not load before triage_engine.js");
+}
+
 const {
   MOTIVE_MANDATE,
   MOTIVE_VENTURE_PORTFOLIO,
@@ -6,7 +10,7 @@ const {
   SCORING_WEIGHTS,
   buildReferenceCorpus,
   classifyCompanySector,
-} = window.MotiveReference;
+} = window.MotiveReference || {};
 
 const STOP_WORDS = new Set([
   "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with",

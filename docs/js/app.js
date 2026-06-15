@@ -13,14 +13,6 @@
   }
 
   function initApp() {
-    if (!window.TriageEngine) {
-      showFatalError("App failed to load (triage engine missing). Please hard-refresh the page.");
-      return;
-    }
-
-    const { triageCompanies, parseCsv, analyzeCsv, CSV_FIELD_DEFINITIONS, CSV_REQUIRED_FIELDS } =
-      window.TriageEngine;
-
     const uploadZone = document.getElementById("uploadZone");
     const csvInput = document.getElementById("csvInput");
     const uploadBtn = document.getElementById("uploadBtn");
@@ -49,6 +41,24 @@
       return;
     }
 
+    const engineReady = Boolean(
+      window.TriageEngine?.triageCompanies &&
+        window.TriageEngine?.parseCsv &&
+        window.TriageEngine?.analyzeCsv
+    );
+
+    const triageCompanies = window.TriageEngine?.triageCompanies;
+    const parseCsv = window.TriageEngine?.parseCsv;
+    const analyzeCsv = window.TriageEngine?.analyzeCsv;
+    const CSV_FIELD_DEFINITIONS = window.TriageEngine?.CSV_FIELD_DEFINITIONS || {};
+    const CSV_REQUIRED_FIELDS = window.TriageEngine?.CSV_REQUIRED_FIELDS || [];
+
+    if (!engineReady) {
+      showFatalError(
+        "Scoring engine did not load. You can still pick a file, but hard-refresh (Ctrl+F5) if processing fails."
+      );
+    }
+
     let latestResults = null;
     let pendingCsvText = null;
     let pendingFileName = null;
@@ -73,6 +83,12 @@
       statusBanner.classList.remove("hidden", "error", "success");
       if (type === "error") statusBanner.classList.add("error");
       if (type === "success") statusBanner.classList.add("success");
+    }
+
+    function requireEngine() {
+      if (engineReady && analyzeCsv && triageCompanies) return true;
+      setStatus("Scoring engine not loaded. Hard-refresh the page (Ctrl+F5) and try again.", "error");
+      return false;
     }
 
     function openFilePicker() {
@@ -217,6 +233,8 @@
     }
 
     function runTriage(csvText, successMessage = "", customMapping = null, fileName = null) {
+      if (!requireEngine()) return;
+
       pendingCsvText = csvText;
       pendingFileName = fileName;
 
@@ -460,7 +478,7 @@
         .replaceAll('"', "&quot;");
     }
 
-    if (window.SAMPLE_INBOUND_CSV) {
+    if (engineReady && window.SAMPLE_INBOUND_CSV) {
       runTriage(window.SAMPLE_INBOUND_CSV, "Loaded sample pipeline (25 companies).");
     }
   }
