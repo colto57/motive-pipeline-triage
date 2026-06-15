@@ -37,11 +37,11 @@ const MOTIVE_MANDATE = {
 
 /**
  * Observed venture portfolio mix (38 companies in similarity corpus, June 2026).
- * Source: motivepartners.com/portfolio Â· Venture strategy filter.
+ * Source: motivepartners.com/portfolio · Venture strategy filter.
  * Total Venture on site = 41 (includes 4 realized); corpus excludes 3 realized (Corastone, Februar, Vitera).
  */
 const MOTIVE_PORTFOLIO_ANALYTICS = {
-  source: "motivepartners.com/portfolio Â· Venture strategy",
+  source: "motivepartners.com/portfolio · Venture strategy",
   sampleSize: 38,
   totalVentureOnSite: 41,
   activeVentureOnSite: 37,
@@ -134,7 +134,7 @@ const MOTIVE_SECTOR_TAXONOMY = [
   },
 ];
 
-/** Adjacent tech sectors â€” kept in pipeline but deprioritized vs core fintech */
+/** Adjacent tech sectors — kept in pipeline but deprioritized vs core fintech */
 const ADJACENT_SECTORS = [
   { pattern: /hr technology|human resources|workforce planning|headcount|compensation benchmarking/i, label: "HR Technology" },
   { pattern: /proptech|commercial real estate buildings|access control|energy management|tenant experience/i, label: "PropTech / CRE operations" },
@@ -475,7 +475,7 @@ function scaleThesisSimilarity(cosineSim) {
 function parseMoney(text) {
   const arrMatch = text.match(/\$([\d.]+)\s*([mbk])\s*arr/i);
   const gmvMatch = text.match(/\$([\d.]+)\s*([mbn])\+?\s*gmv/i);
-  const raiseMatch = text.match(/(?:raising|raise)\s+[Â£â‚¬$]?([\d.]+)\s*([mbk])/i);
+  const raiseMatch = text.match(/(?:raising|raise)\s+[£€$]?([\d.]+)\s*([mbk])/i);
 
   const toNumber = (value, unit) => {
     const mult = { k: 1e3, m: 1e6, b: 1e9, n: 1e9 }[unit.toLowerCase()] || 1;
@@ -1031,7 +1031,7 @@ function applyScoreSpread(raw) {
 
 function compareShortlistResults(a, b) {
   const scoreDelta = b.overallScore - a.overallScore;
-  if (Math.abs(scoreDelta) >= 1) return scoreDelta;
+  if (scoreDelta !== 0) return scoreDelta;
 
   const tractionDelta = b.componentScores.traction - a.componentScores.traction;
   if (tractionDelta !== 0) return tractionDelta;
