@@ -145,13 +145,17 @@ const COMPANY_AGE_BY_STAGE = {
 };
 
 const SCORING_WEIGHTS = {
-  thesisSimilarity: 0.22,
-  portfolioSectorFit: 0.24,
-  traction: 0.18,
-  founderSignal: 0.14,
-  geographyAffinity: 0.08,
-  companyAgeFit: 0.08,
-  stageFit: 0.06,
+  thesisSimilarity: 0.17,
+  portfolioSectorFit: 0.19,
+  traction: 0.13,
+  founderSignal: 0.11,
+  geographyAffinity: 0.06,
+  companyAgeFit: 0.06,
+  stageFit: 0.04,
+  checkSizeFit: 0.06,
+  capitalEfficiency: 0.06,
+  infrastructureMoat: 0.06,
+  verticalAiFit: 0.06,
 };
 
 const MOTIVE_THESIS_STATEMENTS = [

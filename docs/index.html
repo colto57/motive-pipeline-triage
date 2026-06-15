@@ -43,6 +43,14 @@
             </div>
           </div>
           <p class="status-banner hidden" id="statusBanner" role="status" aria-live="polite"></p>
+          <section class="panel hidden mapping-panel" id="mappingSection">
+            <h2>Map your CSV columns</h2>
+            <p class="panel-sub">
+              Some headers did not match automatically. Assign each required field to a column in your file, then run triage.
+            </p>
+            <div id="mappingForm" class="mapping-form"></div>
+            <button type="button" class="btn" id="applyMappingBtn">Apply mapping &amp; run triage</button>
+          </section>
         </div>
       </header>
 
@@ -97,23 +105,31 @@
             <p>Three binary filters — all must pass: <strong>Pre-Seed – Series A</strong>, <strong>US or Europe HQ</strong>, and <strong>core fintech sector</strong> (non-fintech such as HR, logistics, or pure healthcare IT are excluded with reasons).</p>
           </article>
           <article>
-            <h3>2 · Portfolio-calibrated sector fit (24%)</h3>
+            <h3>2 · Portfolio-calibrated sector fit (19%)</h3>
             <p>Sector weights mirror Motive's venture portfolio: Wealth 34%, Banking/Payments 32%, AI/Data 15%, Capital Markets 10%, Insurance 7%, Business Services 2%.</p>
           </article>
           <article>
-            <h3>3 · Thesis similarity (22%)</h3>
+            <h3>3 · Thesis similarity (17%)</h3>
             <p>TF-IDF cosine similarity vs Motive thesis statements and 37 venture portfolio references — closest comp surfaced (e.g. Navro, Synthera AI).</p>
           </article>
           <article>
-            <h3>4 · Geography & company age (8% each)</h3>
+            <h3>4 · Geography &amp; company age (6% each)</h3>
             <p>Hub-city bonus for NYC, Berlin, London, SF (~44% US / 56% Europe portfolio mix). Company age scored against stage-typical windows (e.g. Seed: 1–4 yrs).</p>
           </article>
           <article>
-            <h3>5 · Traction, founders, stage (18% / 14% / 6%)</h3>
+            <h3>5 · Deal economics &amp; moat (6% each)</h3>
+            <p><strong>Check size fit</strong> ($1–10M Motive checks) · <strong>Capital efficiency</strong> (ARR vs. company age/stage) · <strong>Infrastructure moat</strong> (API, bank partners, B2B) · <strong>Vertical AI fit</strong> (financial workflow automation vs. generic AI).</p>
+          </article>
+          <article>
+            <h3>6 · Traction, founders, stage (13% / 11% / 4%)</h3>
             <p>ARR/GMV/growth parsing, tier-1 fintech founder signals, and stage fit within mandate — each with human-readable reasons.</p>
           </article>
           <article>
-            <h3>6 · Output tiers</h3>
+            <h3>7 · CSV upload</h3>
+            <p>Accepts common header aliases (e.g. &quot;Company&quot;, &quot;Industry&quot;, &quot;Location&quot;). UTF-8 BOM safe. If headers don't match, a column-mapping UI lets you map fields manually.</p>
+          </article>
+          <article>
+            <h3>8 · Output tiers</h3>
             <p>≥76 Priority Review · 60–75 Standard Review · &lt;60 Low Priority. Every result includes filter reasons or score rationale.</p>
           </article>
         </div>
@@ -141,9 +157,9 @@
       </article>
     </template>
 
-    <script src="js/motive_reference.js?v=3"></script>
-    <script src="js/triage_engine.js?v=3"></script>
-    <script src="js/sample_data.js?v=3"></script>
-    <script src="js/app.js?v=3"></script>
+    <script src="js/motive_reference.js?v=4"></script>
+    <script src="js/triage_engine.js?v=4"></script>
+    <script src="js/sample_data.js?v=4"></script>
+    <script src="js/app.js?v=4"></script>
   </body>
 </html>

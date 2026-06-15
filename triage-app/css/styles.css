@@ -438,6 +438,47 @@ h1 {
   display: none !important;
 }
 
+.mapping-panel {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+}
+
+.mapping-panel h2 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+.mapping-form {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.mapping-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.mapping-row label {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.mapping-row select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text);
+  font: inherit;
+}
+
 @media (max-width: 900px) {
   .hero,
   .stats,

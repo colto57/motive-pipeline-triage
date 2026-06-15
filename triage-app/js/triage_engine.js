@@ -301,19 +301,6 @@ function scoreTraction(row) {
     reasons.push("Pre-revenue without institutional pilots — higher bar for Motive venture prioritization.");
   }
 
-  if (metrics.raise != null) {
-    const { min, max } = MOTIVE_MANDATE.checkSizeUsd;
-    if (metrics.raise >= min && metrics.raise <= max) {
-      score += 8;
-      reasons.push(`Raise size within Motive's stated $1–10M venture check range.`);
-    } else if (metrics.raise > max) {
-      score -= 6;
-      reasons.push(
-        `Raising above Motive's typical $1–10M lead range — may require co-lead or growth team routing.`
-      );
-    }
-  }
-
   if (reasons.length === 0) {
     reasons.push("Limited traction in pitch — validate metrics on first call.");
   }
@@ -363,6 +350,198 @@ function scoreStageFit(stage) {
     return { score: 78, reasons: ["Pre-seed in mandate — typically needs stronger founder/sector fit."] };
   }
   return { score: 0, reasons: ["Stage outside venture mandate."] };
+}
+
+function scoreCheckSizeFit(row) {
+  const metrics = parseMoney(row.pitch_summary);
+  const { min, max, label } = MOTIVE_MANDATE.checkSizeUsd;
+  const reasons = [];
+
+  if (metrics.raise == null) {
+    return {
+      score: 55,
+      reasons: ["Raise amount not disclosed in pitch — cannot confirm Motive check-size fit."],
+      metrics,
+    };
+  }
+
+  const raiseM = metrics.raise / 1_000_000;
+  let score = 50;
+
+  if (metrics.raise >= min && metrics.raise <= max) {
+    score = 95;
+    reasons.push(
+      `Raising ~$${raiseM.toFixed(1)}M aligns with Motive's stated ${label} venture check size.`
+    );
+  } else if (metrics.raise < min) {
+    score = 72;
+    reasons.push(
+      `Raising below $${min / 1e6}M — may fit Motive pre-seed/co-invest but below typical lead check.`
+    );
+  } else if (metrics.raise <= max * 2) {
+    score = 58;
+    reasons.push(
+      `Raising ~$${raiseM.toFixed(0)}M exceeds Motive's $1–10M lead range — likely needs co-lead or growth routing.`
+    );
+  } else {
+    score = 35;
+    reasons.push(
+      `Raise size (~$${raiseM.toFixed(0)}M) well above Motive venture mandate — route to growth/buyout team.`
+    );
+  }
+
+  return { score, reasons, metrics };
+}
+
+function scoreCapitalEfficiency(row, stage) {
+  const metrics = parseMoney(row.pitch_summary);
+  const foundingYear = parseInt(row.founding_year, 10);
+  const age = Number.isNaN(foundingYear)
+    ? null
+    : Math.max(1, MOTIVE_MANDATE.currentYear - foundingYear);
+  let score = 50;
+  const reasons = [];
+
+  const stageArrBenchmark = {
+    "pre-seed": 0,
+    seed: 400_000,
+    "series a": 2_000_000,
+  };
+
+  if (metrics.arr != null && age != null) {
+    const arrPerYear = metrics.arr / age;
+    if (arrPerYear >= 1_500_000) {
+      score += 28;
+      reasons.push(
+        `Strong capital efficiency: ~$${Math.round(arrPerYear / 1000)}k ARR per year since founding (${age} yrs).`
+      );
+    } else if (arrPerYear >= 500_000) {
+      score += 18;
+      reasons.push(`Solid ARR velocity (~$${Math.round(arrPerYear / 1000)}k ARR/year since founding).`);
+    } else if (metrics.arr >= 100_000) {
+      score += 8;
+      reasons.push("Early ARR relative to company age — efficiency still unproven.");
+    }
+
+    const benchmark = stageArrBenchmark[stage] ?? 400_000;
+    if (benchmark > 0 && metrics.arr >= benchmark) {
+      score += 14;
+      reasons.push(`ARR meets/exceeds typical ${stage} benchmark for Motive venture entry.`);
+    } else if (benchmark > 0 && metrics.arr > 0) {
+      reasons.push(`ARR below typical ${stage} benchmark — may need exceptional founder/sector fit.`);
+      score -= 6;
+    }
+  } else if (metrics.designPartners || metrics.gmv != null) {
+    score += 12;
+    reasons.push("Non-ARR traction (GMV/design partners) — capital efficiency assessed qualitatively.");
+  } else if (metrics.preRevenue) {
+    score = 38;
+    reasons.push("Pre-revenue — no capital efficiency signal yet.");
+  } else {
+    reasons.push("Insufficient metrics to assess capital efficiency.");
+  }
+
+  return { score: Math.max(0, Math.min(100, score)), reasons };
+}
+
+function scoreInfrastructureMoat(row) {
+  const text = `${row.sector} ${row.pitch_summary} ${row.founder_background}`;
+  let score = 42;
+  const reasons = [];
+  const hits = [];
+
+  const moatSignals = [
+    {
+      pattern: /api|platform|infrastructure|embedded|middleware|orchestration|rails/i,
+      label: "Platform / API infrastructure wedge",
+      points: 18,
+    },
+    {
+      pattern: /bank partner|design partner|tier-1|community bank|regulated|compliance|psd2|open banking|sponsor bank/i,
+      label: "Regulated-institution or compliance integration",
+      points: 22,
+    },
+    {
+      pattern: /network effect|two-sided|marketplace|distribution partner|200\+|100\+ retail|institutional/i,
+      label: "Distribution scale or network effects",
+      points: 14,
+    },
+    {
+      pattern: /core banking|payment volume|gmv|settlement|reconciliation|ledger/i,
+      label: "Mission-critical financial workflow",
+      points: 16,
+    },
+    {
+      pattern: /b2b|enterprise|mid-market|smb finance|in-house|back-office/i,
+      label: "B2B fintech GTM (Motive portfolio skew)",
+      points: 12,
+    },
+  ];
+
+  for (const signal of moatSignals) {
+    if (signal.pattern.test(text)) {
+      score += signal.points;
+      hits.push(signal.label);
+    }
+  }
+
+  if (hits.length >= 2) {
+    score += 10;
+    reasons.push(`Multiple infrastructure moats: ${hits.slice(0, 3).join("; ")}.`);
+  } else if (hits.length === 1) {
+    reasons.push(hits[0] + ".");
+  } else {
+    reasons.push("Limited infrastructure / platform depth signals in pitch.");
+    score = 40;
+  }
+
+  if (/consumer|mobile app|retail user|b2c|millennial/i.test(text) && !/b2b|enterprise|api/i.test(text)) {
+    score -= 12;
+    reasons.push("B2C-oriented GTM — Motive venture portfolio skews B2B financial infrastructure.");
+  }
+
+  return { score: Math.max(0, Math.min(100, score)), reasons };
+}
+
+function scoreVerticalAiFit(row) {
+  const text = `${row.sector} ${row.pitch_summary}`;
+  let score = 45;
+  const reasons = [];
+
+  const aiSignal = /\bai\b|agent|llm|machine learning|automation|copilot/i.test(text);
+  const financialWorkflow =
+    /ap\/ar|reconciliation|underwriting|compliance|close|treasury|ledger|settlement|loan|claims|fraud|aml|bsa|contract review|wealth|advisor|payments|banking/i.test(
+      text
+    );
+  const genericAi = /general purpose|chatbot for|ai-powered everything/i.test(text);
+
+  if (aiSignal && financialWorkflow) {
+    score = 92;
+    reasons.push(
+      "Vertical AI applied to specific financial workflows — core Motive 2024–2026 investment theme."
+    );
+  } else if (aiSignal && !financialWorkflow) {
+    score = 52;
+    reasons.push("AI mentioned but not clearly tied to financial workflow automation.");
+  } else if (financialWorkflow && !aiSignal) {
+    score = 68;
+    reasons.push("Financial workflow focus without explicit AI — still on-thesis for Motive infra bets.");
+  } else {
+    score = 42;
+    reasons.push("Weak vertical AI or financial automation signal.");
+  }
+
+  if (genericAi) {
+    score -= 15;
+    reasons.push("Generic AI positioning — risk of AI-washing vs. embedded financial automation.");
+  }
+
+  if (/regulatory tailwind|psd2|open banking|embedded finance|csrd|instant settlement/i.test(text)) {
+    score += 8;
+    reasons.push("Regulatory or market tailwind supports adoption (open banking, embedded finance, etc.).");
+  }
+
+  return { score: Math.max(0, Math.min(100, score)), reasons };
 }
 
 function findBestPortfolioMatch(companyVec, idf) {
@@ -448,6 +627,10 @@ function triageCompanies(rows) {
     const stageFit = scoreStageFit(mandate.stage);
     const geoFit = scoreGeographyAffinity(mandate.geo, row.hq_geography);
     const ageFit = scoreCompanyAge(row, mandate.stage);
+    const checkSize = scoreCheckSizeFit(row);
+    const capitalEff = scoreCapitalEfficiency(row, mandate.stage);
+    const infraMoat = scoreInfrastructureMoat(row);
+    const verticalAi = scoreVerticalAiFit(row);
 
     const componentScores = {
       thesisSimilarity: thesisScore,
@@ -457,6 +640,10 @@ function triageCompanies(rows) {
       geographyAffinity: geoFit.score,
       companyAgeFit: ageFit.score,
       stageFit: stageFit.score,
+      checkSizeFit: checkSize.score,
+      capitalEfficiency: capitalEff.score,
+      infrastructureMoat: infraMoat.score,
+      verticalAiFit: verticalAi.score,
     };
 
     const weightedScore = mandate.passed
@@ -467,7 +654,11 @@ function triageCompanies(rows) {
             founders.score * weights.founderSignal +
             geoFit.score * weights.geographyAffinity +
             ageFit.score * weights.companyAgeFit +
-            stageFit.score * weights.stageFit
+            stageFit.score * weights.stageFit +
+            checkSize.score * weights.checkSizeFit +
+            capitalEff.score * weights.capitalEfficiency +
+            infraMoat.score * weights.infrastructureMoat +
+            verticalAi.score * weights.verticalAiFit
         )
       : 0;
 
@@ -487,13 +678,21 @@ function triageCompanies(rows) {
       positiveReasons.push(...sectorFit.reasons);
       positiveReasons.push(...geoFit.reasons);
       positiveReasons.push(...ageFit.reasons);
-      positiveReasons.push(...traction.reasons.filter((r) => !r.includes("Pre-revenue") && !r.includes("above Motive")));
+      positiveReasons.push(...checkSize.reasons.filter((r) => !r.includes("not disclosed") && !r.includes("above Motive") && !r.includes("growth")));
+      positiveReasons.push(...capitalEff.reasons.filter((r) => !r.includes("below typical") && !r.includes("Pre-revenue") && !r.includes("Insufficient")));
+      positiveReasons.push(...infraMoat.reasons.filter((r) => !r.includes("Limited") && !r.includes("B2C")));
+      positiveReasons.push(...verticalAi.reasons.filter((r) => !r.includes("Weak") && !r.includes("AI-washing") && !r.includes("not clearly")));
+      positiveReasons.push(...traction.reasons.filter((r) => !r.includes("Pre-revenue") && !r.includes("Limited")));
       positiveReasons.push(...founders.reasons.filter((r) => !r.includes("First-time") && !r.includes("neutral")));
       positiveReasons.push(...stageFit.reasons);
     }
 
     const cautionReasons = [
-      ...traction.reasons.filter((r) => r.includes("Pre-revenue") || r.includes("above Motive") || r.includes("Modest")),
+      ...checkSize.reasons.filter((r) => r.includes("not disclosed") || r.includes("above") || r.includes("growth")),
+      ...capitalEff.reasons.filter((r) => r.includes("below typical") || r.includes("Pre-revenue") || r.includes("Insufficient")),
+      ...infraMoat.reasons.filter((r) => r.includes("Limited") || r.includes("B2C")),
+      ...verticalAi.reasons.filter((r) => r.includes("Weak") || r.includes("AI-washing") || r.includes("generic") || r.includes("not clearly")),
+      ...traction.reasons.filter((r) => r.includes("Pre-revenue") || r.includes("Modest") || r.includes("Limited")),
       ...founders.reasons.filter((r) => r.includes("First-time")),
       ...ageFit.reasons.filter((r) => r.includes("mature") || r.includes("acceptable")),
       ...geoFit.reasons.filter((r) => r.includes("not a top")),
@@ -546,25 +745,157 @@ function triageCompanies(rows) {
   };
 }
 
-function parseCsv(text) {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) throw new Error("CSV must include a header row and at least one company.");
+function parseCsv(text, customMapping = null) {
+  const parsed = analyzeCsv(text, customMapping);
+  if (parsed.error) {
+    const err = new Error(parsed.error.message);
+    err.details = parsed.error;
+    throw err;
+  }
+  return parsed.rows;
+}
 
-  const headers = splitCsvLine(lines[0]).map((h) => h.trim());
-  const required = [
-    "company_name",
-    "website",
-    "founding_year",
-    "stage",
-    "hq_geography",
-    "sector",
-    "founder_background",
-    "pitch_summary",
-  ];
-  for (const field of required) {
-    if (!headers.includes(field)) {
-      throw new Error(`Missing required column: ${field}`);
+const CSV_FIELD_DEFINITIONS = {
+  company_name: {
+    label: "Company name",
+    aliases: ["company", "name", "company name", "startup", "company_name", "firm"],
+  },
+  website: { label: "Website", aliases: ["url", "site", "domain", "website", "web"] },
+  founding_year: {
+    label: "Founding year",
+    aliases: ["founding year", "year founded", "founded", "founding_year", "year", "founding"],
+  },
+  stage: {
+    label: "Stage",
+    aliases: ["funding stage", "round", "investment stage", "stage", "funding round"],
+  },
+  hq_geography: {
+    label: "HQ geography",
+    aliases: ["hq", "location", "geography", "headquarters", "country", "hq_geography", "hq location", "region"],
+  },
+  sector: { label: "Sector", aliases: ["industry", "vertical", "category", "sector", "subsector"] },
+  founder_background: {
+    label: "Founder background",
+    aliases: ["founders", "founder background", "team", "founder info", "founder_background", "founder", "management"],
+  },
+  pitch_summary: {
+    label: "Pitch summary",
+    aliases: ["pitch", "summary", "description", "overview", "pitch summary", "pitch_summary", "elevator pitch", "notes"],
+  },
+};
+
+const CSV_REQUIRED_FIELDS = Object.keys(CSV_FIELD_DEFINITIONS);
+
+function stripBom(text) {
+  if (!text) return "";
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+function normalizeHeaderKey(header) {
+  return (header || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^\uFEFF/, "")
+    .replace(/[\s_-]+/g, " ")
+    .replace(/[^\w\s]/g, "")
+    .trim();
+}
+
+function buildAliasLookup() {
+  const lookup = new Map();
+  for (const [field, def] of Object.entries(CSV_FIELD_DEFINITIONS)) {
+    lookup.set(normalizeHeaderKey(field), field);
+    for (const alias of def.aliases) {
+      lookup.set(normalizeHeaderKey(alias), field);
     }
+  }
+  return lookup;
+}
+
+const CSV_ALIAS_LOOKUP = buildAliasLookup();
+
+function resolveHeaderMapping(rawHeaders, customMapping = null) {
+  const foundHeaders = rawHeaders.map((h) => h.trim()).filter(Boolean);
+  const normalizedToOriginal = new Map();
+  for (const header of foundHeaders) {
+    const key = normalizeHeaderKey(header);
+    if (!normalizedToOriginal.has(key)) normalizedToOriginal.set(key, header);
+  }
+
+  const mapping = {};
+  const usedOriginalHeaders = new Set();
+
+  if (customMapping) {
+    for (const field of CSV_REQUIRED_FIELDS) {
+      const chosen = customMapping[field];
+      if (!chosen) continue;
+      if (!foundHeaders.includes(chosen)) {
+        return {
+          mapping: null,
+          missing: [field],
+          foundHeaders,
+          error: `Mapped column "${chosen}" for ${field} was not found in CSV.`,
+        };
+      }
+      mapping[field] = chosen;
+      usedOriginalHeaders.add(chosen);
+    }
+  } else {
+    for (const [norm, original] of normalizedToOriginal.entries()) {
+      const field = CSV_ALIAS_LOOKUP.get(norm);
+      if (field && mapping[field] == null) {
+        mapping[field] = original;
+        usedOriginalHeaders.add(original);
+      }
+    }
+  }
+
+  const missing = CSV_REQUIRED_FIELDS.filter((field) => !mapping[field]);
+  return { mapping, missing, foundHeaders, usedOriginalHeaders };
+}
+
+function analyzeCsv(text, customMapping = null) {
+  const cleaned = stripBom(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const lines = cleaned.split("\n").filter((line, idx) => idx === 0 || line.trim());
+
+  if (lines.length < 2) {
+    return {
+      error: {
+        code: "NO_DATA",
+        message: "CSV must include a header row and at least one company row.",
+        foundHeaders: lines[0] ? splitCsvLine(lines[0]).map((h) => h.trim()) : [],
+      },
+    };
+  }
+
+  const rawHeaders = splitCsvLine(lines[0]).map((h) => h.trim());
+  const resolved = resolveHeaderMapping(rawHeaders, customMapping);
+
+  if (resolved.error) {
+    return {
+      error: {
+        code: "INVALID_MAPPING",
+        message: resolved.error,
+        foundHeaders: resolved.foundHeaders,
+        missing: resolved.missing,
+      },
+    };
+  }
+
+  if (resolved.missing.length > 0) {
+    return {
+      error: {
+        code: "MISSING_COLUMNS",
+        message: buildMissingColumnsMessage(resolved.missing, resolved.foundHeaders),
+        missing: resolved.missing,
+        foundHeaders: resolved.foundHeaders,
+        needsManualMapping: true,
+        rawHeaders,
+        suggestedMapping: resolved.mapping,
+      },
+      rawHeaders,
+      foundHeaders: resolved.foundHeaders,
+    };
   }
 
   const rows = [];
@@ -572,12 +903,39 @@ function parseCsv(text) {
     if (!lines[i].trim()) continue;
     const values = splitCsvLine(lines[i]);
     const row = {};
-    headers.forEach((h, idx) => {
-      row[h] = (values[idx] || "").trim();
-    });
-    rows.push(row);
+    for (const field of CSV_REQUIRED_FIELDS) {
+      const headerName = resolved.mapping[field];
+      const idx = rawHeaders.indexOf(headerName);
+      row[field] = (values[idx] ?? "").trim();
+    }
+    if (Object.values(row).some((v) => v)) rows.push(row);
   }
-  return rows;
+
+  if (!rows.length) {
+    return {
+      error: {
+        code: "NO_ROWS",
+        message: "CSV has headers but no usable company rows.",
+        foundHeaders: resolved.foundHeaders,
+      },
+    };
+  }
+
+  return {
+    rows,
+    rowCount: rows.length,
+    foundHeaders: resolved.foundHeaders,
+    mapping: resolved.mapping,
+    aliasMatches: Object.entries(resolved.mapping).filter(
+      ([field, header]) => normalizeHeaderKey(header) !== normalizeHeaderKey(field)
+    ),
+  };
+}
+
+function buildMissingColumnsMessage(missing, foundHeaders) {
+  const missingLabels = missing.map((f) => CSV_FIELD_DEFINITIONS[f].label).join(", ");
+  const found = foundHeaders.length ? foundHeaders.join(", ") : "(none detected)";
+  return `Missing required columns: ${missingLabels}. Found headers: ${found}. Map columns manually or rename headers to match expected names.`;
 }
 
 function splitCsvLine(line) {
@@ -605,4 +963,10 @@ function splitCsvLine(line) {
   return result;
 }
 
-window.TriageEngine = { triageCompanies, parseCsv };
+window.TriageEngine = {
+  triageCompanies,
+  parseCsv,
+  analyzeCsv,
+  CSV_FIELD_DEFINITIONS,
+  CSV_REQUIRED_FIELDS,
+};

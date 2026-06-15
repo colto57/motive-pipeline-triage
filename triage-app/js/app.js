@@ -18,7 +18,8 @@
       return;
     }
 
-    const { triageCompanies, parseCsv } = window.TriageEngine;
+    const { triageCompanies, parseCsv, analyzeCsv, CSV_FIELD_DEFINITIONS, CSV_REQUIRED_FIELDS } =
+      window.TriageEngine;
 
     const uploadZone = document.getElementById("uploadZone");
     const csvInput = document.getElementById("csvInput");
@@ -26,6 +27,9 @@
     const demoBtn = document.getElementById("demoBtn");
     const exportBtn = document.getElementById("exportBtn");
     const statusBanner = document.getElementById("statusBanner");
+    const mappingSection = document.getElementById("mappingSection");
+    const mappingForm = document.getElementById("mappingForm");
+    const applyMappingBtn = document.getElementById("applyMappingBtn");
 
     const statsSection = document.getElementById("statsSection");
     const resultsSection = document.getElementById("resultsSection");
@@ -46,6 +50,8 @@
     }
 
     let latestResults = null;
+    let pendingCsvText = null;
+    let pendingFileName = null;
 
     const COMPONENT_LABELS = {
       thesisSimilarity: "Thesis similarity",
@@ -55,6 +61,10 @@
       geographyAffinity: "Geography fit",
       companyAgeFit: "Company age fit",
       stageFit: "Stage fit",
+      checkSizeFit: "Check size fit",
+      capitalEfficiency: "Capital efficiency",
+      infrastructureMoat: "Infrastructure moat",
+      verticalAiFit: "Vertical AI fit",
     };
 
     function setStatus(message, type = "info") {
@@ -118,6 +128,24 @@
       downloadText(buildExportCsv(latestResults), "motive_pipeline_triage_output.csv");
     });
 
+    applyMappingBtn?.addEventListener("click", () => {
+      if (!pendingCsvText) {
+        setStatus("No CSV loaded for mapping.", "error");
+        return;
+      }
+      const customMapping = collectMappingSelections();
+      const missing = CSV_REQUIRED_FIELDS.filter((field) => !customMapping[field]);
+      if (missing.length) {
+        setStatus(
+          `Please map all required fields: ${missing.map((f) => CSV_FIELD_DEFINITIONS[f].label).join(", ")}.`,
+          "error"
+        );
+        return;
+      }
+      hideMappingUI();
+      runTriage(pendingCsvText, pendingFileName ? `Processed ${pendingFileName} successfully.` : "", customMapping);
+    });
+
     async function handleFile(file) {
       setStatus(`Reading ${file.name}…`, "info");
 
@@ -132,7 +160,7 @@
           setStatus("That file is empty.", "error");
           return;
         }
-        runTriage(text, `Processed ${file.name} successfully.`);
+        runTriage(text, null, null, file.name);
       } catch (error) {
         setStatus(`Could not read file: ${error.message}`, "error");
       }
@@ -150,23 +178,78 @@
       );
     }
 
-    function runTriage(csvText, successMessage = "") {
-      try {
-        const rows = parseCsv(csvText);
-        if (!rows.length) {
-          setStatus("CSV loaded but no company rows were found.", "error");
+    function hideMappingUI() {
+      mappingSection?.classList.add("hidden");
+      if (mappingForm) mappingForm.innerHTML = "";
+    }
+
+    function showMappingUI(analysis) {
+      if (!mappingSection || !mappingForm) return;
+      mappingForm.innerHTML = "";
+      const headers = analysis.rawHeaders || analysis.foundHeaders || [];
+      const options = ['<option value="">— Select column —</option>']
+        .concat(headers.map((h) => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`))
+        .join("");
+
+      for (const field of CSV_REQUIRED_FIELDS) {
+        const def = CSV_FIELD_DEFINITIONS[field];
+        const suggested = analysis.error?.suggestedMapping?.[field] || "";
+        const row = document.createElement("div");
+        row.className = "mapping-row";
+        row.innerHTML = `
+          <label for="map-${field}">${escapeHtml(def.label)}</label>
+          <select id="map-${field}" data-field="${field}">${options}</select>
+        `;
+        mappingForm.appendChild(row);
+        const select = row.querySelector("select");
+        if (suggested && headers.includes(suggested)) select.value = suggested;
+      }
+
+      mappingSection.classList.remove("hidden");
+    }
+
+    function collectMappingSelections() {
+      const mapping = {};
+      mappingForm?.querySelectorAll("select[data-field]").forEach((select) => {
+        if (select.value) mapping[select.dataset.field] = select.value;
+      });
+      return mapping;
+    }
+
+    function runTriage(csvText, successMessage = "", customMapping = null, fileName = null) {
+      pendingCsvText = csvText;
+      pendingFileName = fileName;
+
+      const analysis = analyzeCsv(csvText, customMapping);
+      if (analysis.error) {
+        if (analysis.error.needsManualMapping) {
+          showMappingUI(analysis);
+          setStatus(analysis.error.message, "error");
           return;
         }
+        hideMappingUI();
+        setStatus(analysis.error.message, "error");
+        return;
+      }
 
+      hideMappingUI();
+      try {
+        const rows = analysis.rows;
         latestResults = triageCompanies(rows);
         renderResults(latestResults);
+
+        const aliasNote =
+          analysis.aliasMatches?.length > 0
+            ? ` · auto-mapped ${analysis.aliasMatches.length} header alias(es)`
+            : "";
+
         setStatus(
           successMessage ||
-            `Processed ${rows.length} companies · ${latestResults.summary.shortlisted} in mandate · ${latestResults.summary.priorityReview} priority review.`,
+            `Loaded ${analysis.rowCount} companies${aliasNote} · ${latestResults.summary.shortlisted} in mandate · ${latestResults.summary.priorityReview} priority review.`,
           "success"
         );
       } catch (error) {
-        setStatus(`Could not parse CSV: ${error.message}`, "error");
+        setStatus(`Could not run triage: ${error.message}`, "error");
       }
     }
 
@@ -281,6 +364,10 @@
         "geography_affinity",
         "company_age_fit",
         "stage_fit",
+        "check_size_fit",
+        "capital_efficiency",
+        "infrastructure_moat",
+        "vertical_ai_fit",
         "primary_sector",
         "top_reasons",
         "filter_reasons",
@@ -306,6 +393,10 @@
             row.componentScores.geographyAffinity,
             row.componentScores.companyAgeFit,
             row.componentScores.stageFit,
+            row.componentScores.checkSizeFit,
+            row.componentScores.capitalEfficiency,
+            row.componentScores.infrastructureMoat,
+            row.componentScores.verticalAiFit,
             csvCell(row.primarySector || ""),
             csvCell(row.positiveReasons.slice(0, 3).join(" | ")),
             csvCell(""),
@@ -324,6 +415,10 @@
             csvCell(row.sector),
             csvCell(row.hq_geography),
             csvCell(row.founding_year),
+            "",
+            "",
+            "",
+            "",
             "",
             "",
             "",
